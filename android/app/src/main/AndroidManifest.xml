@@ -4,9 +4,9 @@
     android:name="android.hardware.nfc"
     android:required="true" />
     <application
-        android:label="spah_generator"
+        android:label="spah generator"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/launcher_icon">
         <activity
             android:name=".MainActivity"
             android:exported="true"
