@@ -10,9 +10,10 @@ class NfcScreen extends StatefulWidget {
 }
 
 class _NfcScreenState extends State<NfcScreen> {
-  String _status = "Siap membaca...";
+  String _status = "Menyiapkan NFC...";
   bool _isReading = false;
   String _nfcData = "";
+  bool _nfcAvailable = false;
 
   @override
   void initState() {
@@ -23,14 +24,28 @@ class _NfcScreenState extends State<NfcScreen> {
   Future<void> _checkNfcAvailability() async {
     try {
       var availability = await FlutterNfcKit.nfcAvailability;
-      if (availability != NFCAvailability.available) {
+      if (availability == NFCAvailability.available) {
         setState(() {
-          _status = "NFC tidak tersedia di perangkat ini";
+          _nfcAvailable = true;
+          _status = "Tempelkan ke benda...";
+        });
+        _startNfcReading();
+      } 
+      else if (availability == NFCAvailability.disabled) {
+        setState(() {
+          _nfcAvailable = false;
+          _status = "NFC dimatikan\n\nAktifkan NFC di pengaturan untuk menggunakan fitur ini";
+        });
+      } 
+      else if (availability == NFCAvailability.not_supported) {
+        setState(() {
+          _nfcAvailable = false;
+          _status = "Perangkat tidak mendukung NFC\n\nFitur ini hanya tersedia di perangkat dengan NFC";
         });
       }
     } catch (e) {
       setState(() {
-        _status = "Error mengecek NFC: $e";
+        _status = "Error cek NFC: $e";
       });
     }
   }
@@ -41,29 +56,37 @@ class _NfcScreenState extends State<NfcScreen> {
       _status = "Tempelkan ke benda...";
     });
 
-    try {
-      final tag = await FlutterNfcKit.poll(
-        timeout: Duration(seconds: 60),
-        iosMultipleTagMessage: "Terdeteksi Tag lebih dari 1!",
-        iosAlertMessage: "Scan benda",
-      );
+    _readNfcContinuously();
+  }
 
-      setState(() {
-        _status = "Benda dikenali! ID: ${tag.id}";
-      });
+  void _readNfcContinuously() async {
+    while (_isReading && mounted) {
+      try {
+        final tag = await FlutterNfcKit.poll(
+          timeout: Duration(seconds: 60),
+          iosMultipleTagMessage: "Terdeteksi Tag lebih dari 1!",
+          iosAlertMessage: "Scan benda",
+        );
 
-      await Future.delayed(Duration(seconds: 3));
-
-      if (mounted && _isReading) {
         setState(() {
-          _status = "Tempelkan ke benda lain...";
+          _status = "Benda dikenali! ID: ${tag.id}";
         });
+
+        await Future.delayed(Duration(seconds: 2));
+        
+        if (mounted && _isReading) {
+          setState(() {
+            _status = "Tempelkan ke benda lain...";
+          });
+        }
+      } catch (e) {
+        if (_isReading && mounted) {
+          setState(() {
+            _status = "Terjadi Kesalahan!";
+          });
+          await Future.delayed(Duration(seconds: 1));
+        }
       }
-    } catch (e) {
-      setState(() {
-        _status = "Gagal membaca: $e";
-        _isReading = false;
-      });
     }
   }
 
@@ -125,18 +148,13 @@ class _NfcScreenState extends State<NfcScreen> {
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
-                          Icon(Icons.nfc, size: 80, color: Color(0xFF4ECDC4)),
-                          if (_isReading)
-                            Positioned(
-                              bottom: 20,
-                              child: Text('📱', style: TextStyle(fontSize: 40)),
-                            ),
+                          Icon(Icons.nfc, size: 80, color: Color(0xFF4ECDC4))
                         ],
                       ),
                     ),
                     SizedBox(height: 30),
                     Text(
-                      _isReading ? "TEMPELKAN KE BENDA" : "TEKAN TOMBOL MULAI",
+                      _isReading ? "TEMPELKAN KE BENDA" : "MENYIAPKAN NFC...",
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -162,11 +180,12 @@ class _NfcScreenState extends State<NfcScreen> {
                 width: double.infinity,
                 height: 80,
                 child: ElevatedButton(
-                  onPressed: _isReading ? _stopNfcReading : _startNfcReading,
+                  onPressed: () {
+                    _stopNfcReading();
+                    Navigator.pop(context);
+                  },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _isReading
-                        ? Color(0xFFFE6D73)
-                        : Color(0xFF4ECDC4),
+                    backgroundColor: Color(0xFFFE6D73),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -176,13 +195,13 @@ class _NfcScreenState extends State<NfcScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        _isReading ? Icons.stop : Icons.play_arrow,
+                        Icons.stop,
                         color: Colors.white,
                         size: 35,
                       ),
                       SizedBox(width: 15),
                       Text(
-                        _isReading ? "BERHENTI" : "MULAI BACA",
+                        "BERHENTI",
                         style: TextStyle(
                           fontSize: 24,
                           color: Colors.white,
@@ -192,19 +211,6 @@ class _NfcScreenState extends State<NfcScreen> {
                     ],
                   ),
                 ),
-              ),
-            ),
-
-            Padding(
-              padding: EdgeInsets.only(bottom: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Text('🐶', style: TextStyle(fontSize: 30)),
-                  Text('🐱', style: TextStyle(fontSize: 30)),
-                  Text('🐰', style: TextStyle(fontSize: 30)),
-                  Text('🐻', style: TextStyle(fontSize: 30)),
-                ],
               ),
             ),
           ],
