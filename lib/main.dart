@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:spah_generator/menu_utama.dart';
+import 'package:spah_generator/screens/menu_utama.dart';
 
 void main() {
   runApp(ExplorasiApp());

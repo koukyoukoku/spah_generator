@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
 import 'package:ndef/ndef.dart' as ndef;
+import 'package:spah_generator/components/SmoothPress.dart';
 
 class NfcScreen extends StatefulWidget {
   @override
@@ -30,17 +31,17 @@ class _NfcScreenState extends State<NfcScreen> {
           _status = "Tempelkan ke benda...";
         });
         _startNfcReading();
-      } 
-      else if (availability == NFCAvailability.disabled) {
+      } else if (availability == NFCAvailability.disabled) {
         setState(() {
           _nfcAvailable = false;
-          _status = "NFC dimatikan\n\nAktifkan NFC di pengaturan untuk menggunakan fitur ini";
+          _status =
+              "NFC dimatikan\n\nAktifkan NFC di pengaturan untuk menggunakan fitur ini";
         });
-      } 
-      else if (availability == NFCAvailability.not_supported) {
+      } else if (availability == NFCAvailability.not_supported) {
         setState(() {
           _nfcAvailable = false;
-          _status = "Perangkat tidak mendukung NFC\n\nFitur ini hanya tersedia di perangkat dengan NFC";
+          _status =
+              "Perangkat tidak mendukung NFC\n\nFitur ini hanya tersedia di perangkat dengan NFC";
         });
       }
     } catch (e) {
@@ -73,7 +74,7 @@ class _NfcScreenState extends State<NfcScreen> {
         });
 
         await Future.delayed(Duration(seconds: 2));
-        
+
         if (mounted && _isReading) {
           setState(() {
             _status = "Tempelkan ke benda lain...";
@@ -148,7 +149,7 @@ class _NfcScreenState extends State<NfcScreen> {
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
-                          Icon(Icons.nfc, size: 80, color: Color(0xFF4ECDC4))
+                          Icon(Icons.nfc, size: 80, color: Color(0xFF4ECDC4)),
                         ],
                       ),
                     ),
@@ -176,29 +177,29 @@ class _NfcScreenState extends State<NfcScreen> {
 
             Padding(
               padding: EdgeInsets.all(25),
-              child: Container(
-                width: double.infinity,
-                height: 80,
-                child: ElevatedButton(
-                  onPressed: () {
-                    _stopNfcReading();
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFFFE6D73),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    elevation: 8,
+              child: SmoothPressButton(
+                onPressed: () {
+                  _stopNfcReading();
+                  Navigator.pop(context);
+                },
+                child: Container(
+                  width: double.infinity,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Color(0xFFFE6D73),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 8,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.stop,
-                        color: Colors.white,
-                        size: 35,
-                      ),
+                      Icon(Icons.stop, color: Colors.white, size: 35),
                       SizedBox(width: 15),
                       Text(
                         "BERHENTI",
