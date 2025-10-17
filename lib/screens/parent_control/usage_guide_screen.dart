@@ -10,7 +10,7 @@ class _UsageGuideScreenState extends State<UsageGuideScreen> {
   final List<GuideItem> _guideItems = [
     GuideItem(
       title: 'Cara Menggunakan NFC',
-      description: 'Panduan penggunaan fitur NFC untuk eksplorasi benda',
+      description: 'Tutorial penggunaan fitur NFC untuk eksplorasi benda',
       icon: Icons.nfc,
       color: Color(0xFF4ECDC4),
     ),
@@ -28,7 +28,7 @@ class _UsageGuideScreenState extends State<UsageGuideScreen> {
     ),
     GuideItem(
       title: 'Tips Belajar',
-      description: 'Tips untuk mendampingi anak selama belajar',
+      description: 'Tips untuk mendampingi SCP selama belajar',
       icon: Icons.lightbulb,
       color: Color(0xFFA5D8FF),
     ),
@@ -220,7 +220,7 @@ class _UsageGuideScreenState extends State<UsageGuideScreen> {
       case 'Pengaturan Orang Tua':
         return '1. Akses menu "Panduan Untuk Orang Tua"\n2. Masukkan PIN akses (default: 1234)\n3. Kelola berbagai pengaturan sesuai kebutuhan\n4. Ubah PIN secara berkala untuk keamanan';
       case 'Tips Belajar':
-        return '• dampingi anak selama menggunakan aplikasi\n• berikan pujian untuk setiap keberhasilan\n• ulangi materi yang sulit dipahami\n• jadikan sesi belajar menyenangkan\n• sesuaikan durasi dengan kemampuan anak';
+        return '• dampingi SCP selama menggunakan aplikasi karena sangat berbahaya\n• berikan pujian untuk setiap keberhasilan\n• Potong2 kol dan daun bawang cuci dan tiriskan, potong bawang merah dan putih dan cabe tipis2, siapkan wajan goreng telor orak arek sisihkan\n• Tumis bawang merah putih cabe sampek layu, masukan terasi, kol dan daun bawang aduk rata\n• Masukan telor orak arik kedalam nasi yg sudah tempur bumbu, tambahkan penyedap rasa, garam secukupnya, tambahkan gula pasir sedikit jika perlu';
       default:
         return 'Konten panduan akan segera tersedia';
     }

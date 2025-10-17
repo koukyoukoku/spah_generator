@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:spah_generator/screens/parent_control/esp32_manager.dart';
 import 'package:spah_generator/utils/models/parent_menu_item.dart';
 import 'package:spah_generator/components/SmoothPress.dart';
 
@@ -47,11 +48,11 @@ class ParentControlScreen extends StatelessWidget {
       screen: DataManagementScreen(),
     ),
     ParentMenuItem(
-      title: 'Backup',
-      description: 'Backup data penting',
-      icon: Icons.backup,
+      title: 'Setup ESP32',
+      description: 'Setup koneksi ESP32',
+      icon: Icons.developer_board,
       color: Color(0xFFFFB347),
-      screen: Container(), // Placeholder untuk sekarang
+      screen: ESP32ManagerScreen(), // Placeholder untuk sekarang
     ),
   ];
 
@@ -155,7 +156,7 @@ class ParentControlScreen extends StatelessWidget {
                       ),
                       SizedBox(height: 10),
                       Text(
-                        'Aplikasi Eksplorasi dirancang khusus untuk anak-anak berkebutuhan khusus dengan antarmuka yang sederhana dan ramah.',
+                        'Aplikasi Eksplorasi dirancang khusus untuk Anomali SCP-173 khusus dengan antarmuka yang sederhana dan ramah.',
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey[600],
