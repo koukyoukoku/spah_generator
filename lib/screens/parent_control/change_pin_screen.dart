@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spah_generator/components/SmoothPress.dart';
-import 'package:spah_generator/utils/widgets/pin_box.dart';
-import 'package:spah_generator/utils/widgets/success_checkmark.dart';
+import 'package:spah_generator/components/pin_box.dart';
+import 'package:spah_generator/components/success_checkmark.dart';
 
 class ChangePinScreen extends StatefulWidget {
   @override

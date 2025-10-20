@@ -37,6 +37,14 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        maven("https://jitpack.io") // bisa juga ditaruh di sini
+    }
+}
 }
 
 flutter {

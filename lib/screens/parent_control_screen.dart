@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:spah_generator/screens/parent_control/esp32_manager.dart';
-import 'package:spah_generator/utils/models/parent_menu_item.dart';
+import 'package:spah_generator/screens/parent_control/esp32_manager_screen.dart';
+import 'package:spah_generator/models/parent_menu_item.dart';
 import 'package:spah_generator/components/SmoothPress.dart';
-
-// Import screens untuk masing-masing fitur
+import 'package:spah_generator/services/esp32_service.dart';
 import 'parent_control/change_pin_screen.dart';
 import 'parent_control/sync_data_screen.dart';
 import 'parent_control/usage_guide_screen.dart';
@@ -11,48 +10,52 @@ import 'parent_control/app_settings_screen.dart';
 import 'parent_control/data_management_screen.dart';
 
 class ParentControlScreen extends StatelessWidget {
-  final List<ParentMenuItem> menuItems = [
+  final ESP32Service esp32Service;
+
+  const ParentControlScreen({Key? key, required this.esp32Service}) : super(key: key);
+
+  List<ParentMenuItem> get menuItems => [
     ParentMenuItem(
       title: 'Ubah PIN',
       description: 'Ganti PIN akses orang tua',
       icon: Icons.lock,
       color: Color(0xFF4ECDC4),
-      screen: ChangePinScreen(),
+      screenBuilder: (context) => ChangePinScreen(),
     ),
     ParentMenuItem(
       title: 'Sinkronisasi',
       description: 'Sync data dengan cloud',
       icon: Icons.cloud_sync,
       color: Color(0xFFFE6D73),
-      screen: SyncDataScreen(),
+      screenBuilder: (context) => SyncDataScreen(),
     ),
     ParentMenuItem(
       title: 'Panduan',
       description: 'Cara menggunakan aplikasi',
       icon: Icons.menu_book,
       color: Color(0xFFFED766),
-      screen: UsageGuideScreen(),
+      screenBuilder: (context) => UsageGuideScreen(),
     ),
     ParentMenuItem(
       title: 'Pengaturan',
       description: 'Pengaturan aplikasi',
       icon: Icons.settings,
       color: Color(0xFFA5D8FF),
-      screen: AppSettingsScreen(),
+      screenBuilder: (context) => AppSettingsScreen(),
     ),
     ParentMenuItem(
       title: 'Data Anak',
       description: 'Kelola data progres anak',
       icon: Icons.people,
       color: Color(0xFFC8A2C8),
-      screen: DataManagementScreen(),
+      screenBuilder: (context) => DataManagementScreen(),
     ),
     ParentMenuItem(
       title: 'Setup ESP32',
       description: 'Setup koneksi ESP32',
       icon: Icons.developer_board,
       color: Color(0xFFFFB347),
-      screen: ESP32ManagerScreen(), // Placeholder untuk sekarang
+      screenBuilder: (context) => ESP32ManagerScreen(esp32Service: esp32Service),
     ),
   ];
 
@@ -119,7 +122,6 @@ class ParentControlScreen extends StatelessWidget {
               ),
               SizedBox(height: 30),
 
-              // Grid Menu
               GridView.builder(
                 shrinkWrap: true,
                 physics: NeverScrollableScrollPhysics(),
@@ -135,8 +137,6 @@ class ParentControlScreen extends StatelessWidget {
                 },
               ),
               SizedBox(height: 20),
-
-              // Tentang Aplikasi
               Card(
                 elevation: 5,
                 shape: RoundedRectangleBorder(
@@ -188,7 +188,7 @@ class ParentControlScreen extends StatelessWidget {
       onPressed: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => item.screen),
+          MaterialPageRoute(builder: item.screenBuilder),
         );
       },
       child: Card(
@@ -235,6 +235,16 @@ class ParentControlScreen extends StatelessWidget {
                     color: item.color,
                   ),
                   textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 4),
+                Text(
+                  item.description,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.grey[600],
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
                 ),
               ],
             ),

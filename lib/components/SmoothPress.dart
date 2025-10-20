@@ -66,7 +66,6 @@ class _SmoothPressButtonState extends State<SmoothPressButton>
   }
 }
 
-// Alternatif dengan efek shadow yang berubah (lebih dramatis)
 class DeepPressButton extends StatefulWidget {
   final Widget child;
   final VoidCallback onPressed;

@@ -222,7 +222,7 @@ class _UsageGuideScreenState extends State<UsageGuideScreen> {
       case 'Tips Belajar':
         return '• dampingi SCP selama menggunakan aplikasi karena sangat berbahaya\n• berikan pujian untuk setiap keberhasilan\n• Potong2 kol dan daun bawang cuci dan tiriskan, potong bawang merah dan putih dan cabe tipis2, siapkan wajan goreng telor orak arek sisihkan\n• Tumis bawang merah putih cabe sampek layu, masukan terasi, kol dan daun bawang aduk rata\n• Masukan telor orak arik kedalam nasi yg sudah tempur bumbu, tambahkan penyedap rasa, garam secukupnya, tambahkan gula pasir sedikit jika perlu';
       default:
-        return 'Konten panduan akan segera tersedia';
+        return 'Konten panduan akan segera tersedia...';
     }
   }
 }
