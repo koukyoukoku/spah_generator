@@ -15,6 +15,22 @@ class _ChangePinScreenState extends State<ChangePinScreen> {
   String _message = '';
   bool _showConfirm = false;
   bool _isSuccess = false;
+  FocusNode _pinFocusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _pinFocusNode = FocusNode();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FocusScope.of(context).requestFocus(_pinFocusNode);
+    });
+  }
+
+  @override
+  void dispose() {
+    _pinFocusNode.dispose();
+    super.dispose();
+  }
 
   Future<void> _changePassword() async {
     if (_newPin.length != 4) {
@@ -62,78 +78,134 @@ class _ChangePinScreenState extends State<ChangePinScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF9F5E8),
-      appBar: AppBar(
-        backgroundColor: Color(0xFF4ECDC4),
-        title: Text(
-          'Ubah PIN',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-      ),
+      backgroundColor: Color(0xFFE8F4F8),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(25),
-          child: Column(
-            children: [
-              Container(
-                width: 100,
-                height: 100,
+        child: Stack(
+          children: [
+            Positioned(
+              top: -50,
+              right: -30,
+              child: Container(
+                width: 200,
+                height: 200,
+                decoration: BoxDecoration(
+                  color: Color(0xFF4ECDC4).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+
+            Positioned(
+              bottom: -80,
+              left: -40,
+              child: Container(
+                width: 250,
+                height: 250,
+                decoration: BoxDecoration(
+                  color: Color(0xFFFE6D73).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+            Positioned(
+              top: 16,
+              left: 16,
+              child: Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Color(0xFF4ECDC4),
-                    width: 4,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 6,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    Icons.arrow_back_rounded,
+                    color: Color(0xFF2D5A7E),
+                    size: 24,
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+            ),
+            Column(
+              children: [
+                SizedBox(height: 40),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.all(30),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black26,
+                                blurRadius: 10,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                            border: Border.all(
+                              color: Color(0xFF4ECDC4),
+                              width: 4,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.lock_outline_rounded,
+                            size: 60,
+                            color: Color(0xFF4ECDC4),
+                          ),
+                        ),
+
+                        SizedBox(height: 30),
+                        Text(
+                          'Ubah PIN',
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF2D5A7E),
+                            fontFamily: 'ComicNeue',
+                          ),
+                        ),
+
+                        SizedBox(height: 8),
+
+                        Text(
+                          _isSuccess 
+                            ? 'PIN berhasil diubah!'
+                            : (_showConfirm 
+                                ? 'Konfirmasi PIN baru Anda'
+                                : 'Buat PIN baru 4 digit untuk kontrol orang tua'),
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Color(0xFF666666),
+                            fontFamily: 'ComicNeue',
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+
+                        SizedBox(height: 40),
+
+                        if (_isSuccess) 
+                          _buildSuccessWidget()
+                        else 
+                          _buildFormWidget(),
+                      ],
+                    ),
                   ),
                 ),
-                child: Icon(
-                  Icons.lock,
-                  size: 50,
-                  color: Color(0xFF4ECDC4),
-                ),
-              ),
-              SizedBox(height: 20),
-              Text(
-                'Ubah PIN Akses',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF4ECDC4),
-                ),
-              ),
-              SizedBox(height: 10),
-              Text(
-                'Buat PIN baru untuk mengakses kontrol orang tua',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 30),
-              
-              Card(
-                elevation: 5,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: _isSuccess ? _buildSuccessWidget() : _buildFormWidget(),
-                ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -142,89 +214,205 @@ class _ChangePinScreenState extends State<ChangePinScreen> {
   Widget _buildFormWidget() {
     return Column(
       children: [
-        Text(
-          'PIN default: 1234',
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
-            fontStyle: FontStyle.italic,
-          ),
-        ),
-        SizedBox(height: 30),
-        
         if (!_showConfirm) ...[
-          PinBox(
-            length: 4,
-            onCompleted: _onNewPinCompleted,
-            onChanged: (pin) {
-              setState(() {
-                _newPin = pin;
-              });
-            },
-            autofocus: true,
-          ),
-        ] else ...[
-          Text(
-            'Konfirmasi PIN Baru',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-            ),
-          ),
-          SizedBox(height: 20),
-          PinBox(
-            length: 4,
-            onCompleted: _onConfirmPinCompleted,
-            onChanged: (pin) {
-              setState(() {
-                _confirmPin = pin;
-              });
-            },
-            autofocus: true,
-          ),
-        ],
-        
-        if (_message.isNotEmpty && !_isSuccess) ...[
-          SizedBox(height: 20),
-          Text(
-            _message,
-            style: TextStyle(
-              color: Color(0xFFFE6D73),
-              fontSize: 14,
-            ),
-          ),
-        ],
-        
-        if (_showConfirm && !_isSuccess) ...[
-          SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SmoothPressButton(
-                onPressed: () {
-                  setState(() {
-                    _showConfirm = false;
-                    _confirmPin = '';
-                    _message = '';
-                  });
-                },
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          Container(
+            height: 80,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(4, (index) {
+                bool hasValue = _newPin.length > index;
+                return Container(
+                  width: 50,
+                  height: 50,
+                  margin: EdgeInsets.symmetric(horizontal: 8),
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(10),
+                    color: hasValue
+                        ? Color(0xFF4ECDC4)
+                        : Colors.white,
+                    border: Border.all(
+                      color: hasValue
+                          ? Color(0xFF2AA8A0)
+                          : Color(0xFFCCCCCC),
+                      width: 2,
+                    ),
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  child: Text(
-                    'Ulangi PIN',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[700],
-                      fontWeight: FontWeight.bold,
+                  child: Center(
+                    child: Text(
+                      hasValue ? '●' : '',
+                      style: TextStyle(
+                        fontSize: 24,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
+                );
+              }),
+            ),
+          ),
+        ] else ...[
+          Container(
+            height: 80,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(4, (index) {
+                bool hasValue = _confirmPin.length > index;
+                return Container(
+                  width: 50,
+                  height: 50,
+                  margin: EdgeInsets.symmetric(horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: hasValue
+                        ? Color(0xFF4ECDC4)
+                        : Colors.white,
+                    border: Border.all(
+                      color: hasValue
+                          ? Color(0xFF2AA8A0)
+                          : Color(0xFFCCCCCC),
+                      width: 2,
+                    ),
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      hasValue ? '●' : '',
+                      style: TextStyle(
+                        fontSize: 24,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
+
+        SizedBox(height: 20),
+        if (_message.isNotEmpty)
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 12,
+            ),
+            decoration: BoxDecoration(
+              color: Color(0xFFFFE6E8),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Color(0xFFFF6B6B)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  color: Color(0xFFFF6B6B),
+                  size: 18,
+                ),
+                SizedBox(width: 8),
+                Text(
+                  _message,
+                  style: TextStyle(
+                    color: Color(0xFFD32F2F),
+                    fontSize: 14,
+                    fontFamily: 'ComicNeue',
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        SizedBox(height: 30),
+        Container(
+          width: 0,
+          height: 0,
+          child: TextField(
+            focusNode: _pinFocusNode,
+            obscureText: false,
+            keyboardType: TextInputType.number,
+            maxLength: 4,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 1,
+              color: Colors.transparent,
+            ),
+            decoration: InputDecoration(
+              counterText: "",
+              border: InputBorder.none,
+            ),
+            onChanged: (value) {
+              if (!_showConfirm) {
+                setState(() {
+                  _newPin = value;
+                });
+                if (value.length == 4) {
+                  Future.delayed(Duration(milliseconds: 300), () {
+                    _onNewPinCompleted(value);
+                    _pinFocusNode.requestFocus();
+                  });
+                }
+              } else {
+                setState(() {
+                  _confirmPin = value;
+                });
+                if (value.length == 4) {
+                  Future.delayed(Duration(milliseconds: 300), () {
+                    _onConfirmPinCompleted(value);
+                  });
+                }
+              }
+            },
+          ),
+        ),
+
+        if (_showConfirm && !_isSuccess) ...[
+          SizedBox(height: 20),
+          SmoothPressButton(
+            onPressed: () {
+              setState(() {
+                _showConfirm = false;
+                _confirmPin = '';
+                _message = '';
+                _newPin = '';
+              });
+              _pinFocusNode.requestFocus();
+            },
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Color(0xFF4ECDC4),
+                  width: 2,
                 ),
               ),
-            ],
+              child: Text(
+                'Ulangi PIN',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Color(0xFF2D5A7E),
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'ComicNeue',
+                ),
+              ),
+            ),
           ),
         ],
       ],
@@ -235,38 +423,31 @@ class _ChangePinScreenState extends State<ChangePinScreen> {
     return Column(
       children: [
         SuccessCheckmark(),
-        SizedBox(height: 20),
-        Text(
-          'PIN berhasil diubah!',
-          style: TextStyle(
-            fontSize: 18,
-            color: Colors.green,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        SizedBox(height: 20),
+        SizedBox(height: 30),
         SmoothPressButton(
           onPressed: () {
-            setState(() {
-              _isSuccess = false;
-              _showConfirm = false;
-              _newPin = '';
-              _confirmPin = '';
-              _message = '';
-            });
+            Navigator.pop(context);
           },
           child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             decoration: BoxDecoration(
               color: Color(0xFF4ECDC4),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0xFF4ECDC4).withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
+                ),
+              ],
             ),
             child: Text(
-              'Ubah PIN Lagi',
+              'Kembali',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 18,
                 color: Colors.white,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
+                fontFamily: 'ComicNeue',
               ),
             ),
           ),

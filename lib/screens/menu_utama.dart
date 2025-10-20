@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:spah_generator/screens/quiz/quiz_main_screen.dart';
 import 'nfc_screen.dart';
 import 'password_screen.dart';
 import 'parent_control_screen.dart';
 import 'parent_control/esp32_manager_screen.dart';
 import 'package:spah_generator/services/esp32_service.dart';
 import 'package:spah_generator/components/SmoothPress.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 class MenuUtama extends StatefulWidget {
   final ESP32Service esp32Service;
@@ -20,6 +22,9 @@ class _MenuUtamaState extends State<MenuUtama> {
   String _connectionStatus = 'Mencari perangkat...';
   Map<String, dynamic> _deviceData = {};
 
+  final AudioPlayer _audioPlayer =
+      AudioPlayer();
+
   @override
   void initState() {
     super.initState();
@@ -28,26 +33,19 @@ class _MenuUtamaState extends State<MenuUtama> {
 
   void _setupConnectionListener() {
     widget.esp32Service.connectedStream.listen((connected) {
-      print('🔌 Connection state changed: $connected');
       if (mounted) {
         setState(() {
-          _isConnectedToESP32 =
-              connected;
+          _isConnectedToESP32 = connected;
         });
       }
     });
 
     widget.esp32Service.statusStream.listen((status) {
-      print('🔔 Status update: $status');
       if (mounted) {
         setState(() {
           _connectionStatus = status;
         });
       }
-    });
-
-    widget.esp32Service.devicesStream.listen((devices) {
-      print('📱 Devices found: $devices');
     });
 
     widget.esp32Service.deviceDataStream.listen((data) {
@@ -89,241 +87,253 @@ class _MenuUtamaState extends State<MenuUtama> {
     );
   }
 
-  void _startGame(BuildContext context) {
-    if (_isConnectedToESP32) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => NfcScreen()),
-      );
-    } else {
-      _showConnectionError(context);
+  Future<void> _startGame(BuildContext context) async {
+    try {
+      await _audioPlayer.setVolume(1.0);
+      await _audioPlayer.play(AssetSource('audio/BubbleClick.mp3'));
+    } catch (e, st) {
+      debugPrint('Gagal mainkan audio: $e\n$st');
     }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => NfcScreen()),
+    );
   }
 
-  void _startQuiz(BuildContext context) {
-    if (_isConnectedToESP32) {
-      print('Tombol KUIZ ditekan');
-    } else {
-      _showConnectionError(context);
+  Future<void> _startQuiz(BuildContext context) async {
+    try {
+      await _audioPlayer.setVolume(1.0);
+      await _audioPlayer.play(AssetSource('audio/BubbleClick.mp3'));
+    } catch (e, st) {
+      debugPrint('Gagal mainkan audio: $e\n$st');
     }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => QuizMainScreen()),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF9F5E8),
+      backgroundColor: Color(0xFFE8F4F8),
       body: SafeArea(
         child: Stack(
           children: [
+            Positioned(
+              top: -50,
+              right: -30,
+              child: Container(
+                width: 200,
+                height: 200,
+                decoration: BoxDecoration(
+                  color: Color(0xFF4ECDC4).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -80,
+              left: -40,
+              child: Container(
+                width: 250,
+                height: 250,
+                decoration: BoxDecoration(
+                  color: Color(0xFFFE6D73).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+
             Column(
               children: [
-                Padding(
-                  padding: EdgeInsets.all(15.0),
+                Container(
+                  padding: EdgeInsets.all(20),
                   child: Column(
                     children: [
                       Container(
                         padding: EdgeInsets.symmetric(
-                          horizontal: 10,
+                          horizontal: 16,
                           vertical: 10,
                         ),
                         decoration: BoxDecoration(
-                          color: _isConnectedToESP32
-                              ? Colors.green[50]
-                              : Colors.orange[50],
-                          borderRadius: BorderRadius.circular(
-                            15,
-                          ), 
-                          border: Border.all(
-                            color: _isConnectedToESP32
-                                ? Colors.green
-                                : Colors.orange,
-                            width: 1,
-                          ),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(25),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black12,
+                              blurRadius: 8,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Row(
-                          mainAxisSize: MainAxisSize
-                              .min,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              _isConnectedToESP32 ? Icons.wifi : Icons.wifi_off,
-                              color: _isConnectedToESP32
-                                  ? Colors.green
-                                  : Colors.orange,
-                              size: 20,
-                            ),
-                            SizedBox(width: 4),
-                            Text(
-                              _isConnectedToESP32
-                                  ? "Connected"
-                                  : "Searching", 
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+                            Container(
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
                                 color: _isConnectedToESP32
                                     ? Colors.green
                                     : Colors.orange,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              _isConnectedToESP32 ? "Terhubung" : "Mencari...",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF333333),
+                                fontFamily: 'ComicNeue',
                               ),
                             ),
                           ],
                         ),
                       ),
-                      SizedBox(height: 20),
-                      Container(
-                        width: 140,
-                        height: 140,
-                        decoration: BoxDecoration(
-                          color: Color(0xFFFED766),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Color(0xFF4ECDC4),
-                            width: 5,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 10,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Icon(
-                              _isConnectedToESP32
-                                  ? Icons.check_circle
-                                  : Icons.warning,
-                              size: 70,
-                              color: _isConnectedToESP32
-                                  ? Colors.green
-                                  : Color.fromARGB(255, 240, 16, 16),
-                            ),
-                            if (!_isConnectedToESP32)
-                              CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.orange,
-                                ),
-                                strokeWidth: 3,
-                              ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 20),
+
+                      SizedBox(height: 30),
+
                       Text(
                         'Eksplorasi',
                         style: TextStyle(
-                          fontSize: 42,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF4ECDC4),
+                          fontSize: 48,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF2D5A7E),
+                          fontFamily: 'ComicNeue',
                           shadows: [
                             Shadow(
-                              blurRadius: 2,
+                              blurRadius: 4,
                               color: Colors.black12,
                               offset: Offset(2, 2),
                             ),
                           ],
                         ),
                       ),
-                      SizedBox(height: 10),
+
+                      SizedBox(height: 8),
+
                       Text(
-                        'Belajar Seru untuk SCP-173',
+                        'Belajar Seru Untuk SCP-173',
                         style: TextStyle(
-                          fontSize: 18,
-                          color: Color(0xFFFE6D73),
+                          fontSize: 20,
+                          color: Color(0xFF666666),
+                          fontFamily: 'ComicNeue',
+                          fontWeight: FontWeight.w400,
                         ),
                         textAlign: TextAlign.center,
                       ),
                     ],
                   ),
                 ),
+
                 SizedBox(height: 20),
+
                 Expanded(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 40),
+                    padding: EdgeInsets.symmetric(horizontal: 30),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         SmoothPressButton(
                           onPressed: () => _startGame(context),
-                          child: TombolBesar(
-                            warna: _isConnectedToESP32
-                                ? Color(0xFF4ECDC4)
-                                : Colors.grey,
-                            ikon: Icons.play_arrow_rounded,
-                            teks: 'MULAI',
-                            emoji: '🎮',
-                            onTap: () {},
+                          child: _MainActionButton(
+                            color: Color(0xFF4ECDC4),
+                            icon: Icons.play_arrow_rounded,
+                            text: 'MULAI',
+                            emoji: '🚀',
+                            isEnabled: true,
                           ),
                         ),
-                        SizedBox(height: 30),
+
+                        SizedBox(height: 25),
+
                         SmoothPressButton(
                           onPressed: () => _startQuiz(context),
-                          child: TombolBesar(
-                            warna: _isConnectedToESP32
-                                ? Color(0xFFFE6D73)
-                                : Colors.grey,
-                            ikon: Icons.quiz_rounded,
-                            teks: 'KUIZ',
-                            emoji: '❓',
-                            onTap: () {},
+                          child: _MainActionButton(
+                            color: Color(0xFFFE6D73),
+                            icon: Icons.quiz_rounded,
+                            text: 'KUIS',
+                            emoji: '🎯',
+                            isEnabled: true,
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-                SizedBox(height: 60),
-              ],
-            ),
 
-            Positioned(
-              top: 10,
-              left: 10,
-              child: SmoothPressButton(
-                onPressed: () => _openParentControl(context),
-                child: Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(color: Colors.transparent),
-                  child: Icon(
-                    Icons.family_restroom,
-                    color: Color(0xFF4ECDC4),
-                    size: 32,
-                  ),
-                ),
-              ),
-            ),
-
-            Positioned(
-              top: 18,
-              right: 10,
-              child: SmoothPressButton(
-                onPressed: () => _openESP32Manager(context),
-                child: Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(color: Colors.transparent),
-                  child: Stack(
+                Container(
+                  padding: EdgeInsets.all(20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Icon(Icons.settings, color: Color(0xFFFE6D73), size: 32),
-                      if (!_isConnectedToESP32)
-                        Positioned(
-                          top: 0,
-                          right: 0,
-                          child: Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
-                            ),
-                          ),
+                      SmoothPressButton(
+                        onPressed: () async {
+                          try {
+                            await _audioPlayer.setVolume(1.0);
+                            await _audioPlayer.play(
+                              AssetSource('audio/PopClick.mp3'),
+                            );
+                            _openParentControl(context);
+                          } catch (e, st) {
+                            _openParentControl(context);
+                            debugPrint('Gagal mainkan audio: $e\n$st');
+                          }
+                        },
+                        child: _BottomActionButton(
+                          icon: Icons.family_restroom,
+                          text: 'Orang Tua',
+                          color: Color(0xFF4ECDC4),
                         ),
+                      ),
+
+                      SmoothPressButton(
+                        onPressed: () async {
+                          try {
+                            await _audioPlayer.setVolume(1.0);
+                            await _audioPlayer.play(
+                              AssetSource('audio/PopClick.mp3'),
+                            );
+                          } catch (e, st) {
+                            _openParentControl(context);
+                            debugPrint('Gagal mainkan audio: $e\n$st');
+                          }
+                          _openESP32Manager(context);
+                        },
+                        child: Stack(
+                          children: [
+                            _BottomActionButton(
+                              icon: Icons.settings,
+                              text: 'Pengaturan',
+                              color: Color(0xFFFE6D73),
+                            ),
+                            if (!_isConnectedToESP32)
+                              Positioned(
+                                top: 0,
+                                right: 0,
+                                child: Container(
+                                  width: 16,
+                                  height: 16,
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
-              ),
+              ],
             ),
           ],
         ),
@@ -335,27 +345,55 @@ class _MenuUtamaState extends State<MenuUtama> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(Icons.wifi_off, color: Colors.orange),
-            SizedBox(width: 8),
-            Text('Perangkat Tidak Terhubung'),
+            Icon(Icons.wifi_off, color: Colors.orange, size: 28),
+            SizedBox(width: 12),
+            Text(
+              'Perangkat Tidak Terhubung',
+              style: TextStyle(
+                fontFamily: 'ComicNeue',
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF333333),
+              ),
+            ),
           ],
         ),
         content: Text(
-          'Harap hubungkan ke perangkat ESP32 terlebih dahulu melalui menu Settings.',
+          'Harap hubungkan ke perangkat ESP32 terlebih dahulu melalui menu Pengaturan.',
+          style: TextStyle(
+            fontFamily: 'ComicNeue',
+            fontSize: 16,
+            color: Color(0xFF666666),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('TUTUP'),
+            child: Text(
+              'TUTUP',
+              style: TextStyle(
+                fontFamily: 'ComicNeue',
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF666666),
+              ),
+            ),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(ctx).pop();
               _openESP32Manager(context);
             },
-            child: Text('SETTINGS'),
+            child: Text(
+              'PENGATURAN',
+              style: TextStyle(
+                fontFamily: 'ComicNeue',
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF4ECDC4),
+              ),
+            ),
           ),
         ],
       ),
@@ -364,78 +402,150 @@ class _MenuUtamaState extends State<MenuUtama> {
 
   @override
   void dispose() {
+    _audioPlayer.dispose();
     super.dispose();
   }
 }
 
-class TombolBesar extends StatelessWidget {
-  final Color warna;
-  final IconData ikon;
-  final String teks;
+class _MainActionButton extends StatelessWidget {
+  final Color color;
+  final IconData icon;
+  final String text;
   final String emoji;
-  final VoidCallback onTap;
+  final bool isEnabled;
 
-  const TombolBesar({
-    required this.warna,
-    required this.ikon,
-    required this.teks,
+  const _MainActionButton({
+    required this.color,
+    required this.icon,
+    required this.text,
     required this.emoji,
-    required this.onTap,
+    required this.isEnabled,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      height: 120,
+      height: 130,
       decoration: BoxDecoration(
-        color: warna,
-        borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: Colors.white, width: 4),
+        color: color,
+        borderRadius: BorderRadius.circular(30),
         boxShadow: [
-          BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4)),
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 12,
+            offset: Offset(0, 6),
+          ),
         ],
+        gradient: isEnabled
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [color, Color.lerp(color, Colors.black, 0.1)!],
+              )
+            : null,
       ),
       child: Stack(
         children: [
+          Positioned(
+            top: 10,
+            right: 20,
+            child: Opacity(
+              opacity: 0.2,
+              child: Text(emoji, style: TextStyle(fontSize: 60)),
+            ),
+          ),
+
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 70,
-                height: 70,
+                width: 80,
+                height: 80,
+                margin: EdgeInsets.only(left: 20),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 8,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Center(
                   child: Text(emoji, style: TextStyle(fontSize: 35)),
                 ),
               ),
-              SizedBox(width: 20),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(ikon, size: 50, color: Colors.white),
-                  SizedBox(height: 5),
-                  Text(
-                    teks,
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      shadows: [
-                        Shadow(
-                          blurRadius: 3,
-                          color: Colors.black26,
-                          offset: Offset(2, 2),
-                        ),
-                      ],
+
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(icon, size: 50, color: Colors.white),
+                    SizedBox(height: 8),
+                    Text(
+                      text,
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        fontFamily: 'ComicNeue',
+                        shadows: [
+                          Shadow(
+                            blurRadius: 4,
+                            color: Colors.black26,
+                            offset: Offset(2, 2),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BottomActionButton extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final Color color;
+
+  const _BottomActionButton({
+    required this.icon,
+    required this.text,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 24),
+          SizedBox(width: 8),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: color,
+              fontFamily: 'ComicNeue',
+            ),
           ),
         ],
       ),

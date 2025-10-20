@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:spah_generator/services/esp32_service.dart';
 import 'package:spah_generator/components/SmoothPress.dart';
@@ -42,11 +41,16 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
     _ssidController.text = _wifiName;
     
     _setupStreamListeners();
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_isConnected) {
+        widget.esp32Service.startDiscovery();
+      }
+    });
   }
 
   void _setupStreamListeners() {
     _statusSubscription = widget.esp32Service.statusStream.listen((status) {
-      print('📱 Manager - Status: $status');
       if (mounted) {
         setState(() {
           _status = status;
@@ -55,7 +59,6 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
     });
 
     _scanningSubscription = widget.esp32Service.scanningStream.listen((scanning) {
-      print('📱 Manager - Scanning: $scanning');
       if (mounted) {
         setState(() {
           _isScanning = scanning;
@@ -64,7 +67,6 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
     });
 
     _connectedSubscription = widget.esp32Service.connectedStream.listen((connected) {
-      print('📱 Manager - Connected: $connected');
       if (mounted) {
         setState(() {
           _isConnected = connected;
@@ -73,7 +75,6 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
     });
 
     _devicesSubscription = widget.esp32Service.devicesStream.listen((devices) {
-      print('📱 Manager - Devices: $devices');
       if (mounted) {
         setState(() {
           _foundDevices = devices;
@@ -82,7 +83,6 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
     });
 
     _deviceDataSubscription = widget.esp32Service.deviceDataStream.listen((data) {
-      print('📱 Manager - Device Data: $data');
       if (mounted) {
         setState(() {
           _deviceData = data;
@@ -91,7 +91,6 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
     });
 
     _provisioningSubscription = widget.esp32Service.provisioningStream.listen((provisioning) {
-      print('📱 Manager - Provisioning: $provisioning');
       if (mounted) {
         setState(() {
           _isProvisioning = provisioning;
@@ -103,188 +102,627 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF9F5E8),
-      appBar: AppBar(
-        backgroundColor: Color(0xFFFE6D73),
-        title: Text('Pengaturan ESP32'),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      backgroundColor: Color(0xFFE8F4F8),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(16),
-          child: Column(
-            children: [
-              _buildStatusCard(),
-              SizedBox(height: 16),
-              if (_deviceData.isNotEmpty) _buildDeviceInfoCard(),
-              _buildDiscoveryCard(),
-              SizedBox(height: 16),
-              _buildWiFiConfigCard(),
-            ],
-          ),
+        child: Stack(
+          children: [
+            Positioned(
+              top: -30,
+              right: -30,
+              child: Container(
+                width: 150,
+                height: 150,
+                decoration: BoxDecoration(
+                  color: Color(0xFF4ECDC4).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+            
+            Positioned(
+              bottom: -50,
+              left: -30,
+              child: Container(
+                width: 180,
+                height: 180,
+                decoration: BoxDecoration(
+                  color: Color(0xFFFE6D73).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+            SingleChildScrollView(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  SizedBox(height: 70),
+                  _buildConnectionCard(),
+                  SizedBox(height: 20),
+                  if (_isConnected && _deviceData.isNotEmpty) 
+                    _buildDeviceInfoCard(),
+                  _buildDiscoveryCard(),
+                  SizedBox(height: 20),
+                  _buildWiFiConfigCard(),
+                  SizedBox(height: 20),
+                ],
+              ),
+            ),
+            Positioned(
+              top: 16,
+              left: 21,
+              child: SmoothPressButton(
+                onPressed: () => Navigator.pop(context),
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 8,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.arrow_back_rounded,
+                    color: Color(0xFF2D5A7E),
+                    size: 24,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildStatusCard() {
+  Widget _buildConnectionCard() {
     bool isActuallyConnected = widget.esp32Service.isConnected;
     String deviceIP = widget.esp32Service.deviceIP;
-    
-    print('🎯 Manager Screen - Connection Status:');
-    print('   - _isConnected (UI): $_isConnected');
-    print('   - isActuallyConnected (Service): $isActuallyConnected');
-    print('   - deviceIP: $deviceIP');
 
-    return Card(
-      elevation: 4,
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          children: [
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isActuallyConnected
+              ? [Color(0xFF4ECDC4), Color(0xFF2AA8A0)]
+              : [Color(0xFFFE6D73), Color(0xFFE55A60)],
+        ),
+        borderRadius: BorderRadius.circular(25),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 12,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isActuallyConnected ? Icons.check_circle : Icons.sync,
+              color: Colors.white,
+              size: 40,
+            ),
+          ),
+          SizedBox(height: 16),
+          Text(
+            isActuallyConnected ? 'TERHUBUNG' : 'MENCOBA HUBUNG',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+              fontFamily: 'ComicNeue',
+            ),
+          ),
+          SizedBox(height: 8),
+
+          Text(
+            _status,
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.white.withOpacity(0.9),
+              fontFamily: 'ComicNeue',
+            ),
+            textAlign: TextAlign.center,
+          ),
+
+          if (isActuallyConnected && deviceIP.isNotEmpty) ...[
+            SizedBox(height: 16),
+            Divider(color: Colors.white.withOpacity(0.3)),
+            SizedBox(height: 12),
+
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: isActuallyConnected ? Colors.green : Colors.orange,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    isActuallyConnected ? Icons.check : Icons.warning,
-                    color: Colors.white,
-                  ),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        isActuallyConnected ? '✅ TERHUBUNG' : '🔄 MENCOBA HUBUNG',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: isActuallyConnected ? Colors.green : Colors.orange,
-                        ),
-                      ),
-                      Text(
-                        _status,
-                        style: TextStyle(fontSize: 14),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
+                _buildInfoItem(Icons.computer, 'IP Device', deviceIP),
+                _buildInfoItem(
+                  Icons.wifi,
+                  'WiFi',
+                  widget.esp32Service.wifiName,
                 ),
               ],
             ),
-            if (isActuallyConnected && deviceIP.isNotEmpty) ...[
-              SizedBox(height: 8),
-              Divider(),
-              Row(
-                children: [
-                  Icon(Icons.computer, size: 16, color: Colors.green),
-                  SizedBox(width: 8),
-                  Text('IP: $deviceIP'),
-                  Spacer(),
-                  Icon(Icons.wifi, size: 16, color: Colors.blue),
-                  SizedBox(width: 8),
-                  Text('${widget.esp32Service.wifiName}'),
-                ],
-              ),
-              if (_deviceData['rssi'] != null) ...[
-                SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(Icons.signal_cellular_alt, size: 14, color: Colors.grey),
-                    SizedBox(width: 4),
-                    Text(
-                      'Sinyal: ${_deviceData['rssi']} dBm',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                    Spacer(),
-                    Icon(Icons.timer, size: 14, color: Colors.grey),
-                    SizedBox(width: 4),
-                    if (_deviceData['uptime'] != null)
-                      Text(
-                        'Uptime: ${_formatUptime(_deviceData['uptime'])}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                  ],
-                ),
-              ],
-            ] else if (!isActuallyConnected && _foundDevices.isNotEmpty) ...[
-              SizedBox(height: 8),
-              Divider(),
-              Text(
-                '📱 ${_foundDevices.length} perangkat ditemukan',
-                style: TextStyle(fontSize: 12, color: Colors.orange),
-              ),
-            ],
           ],
-        ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildInfoItem(IconData icon, String label, String value) {
+    return Column(
+      children: [
+        Icon(icon, color: Colors.white, size: 20),
+        SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.white.withOpacity(0.8),
+            fontFamily: 'ComicNeue',
+          ),
+        ),
+        SizedBox(height: 2),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontFamily: 'ComicNeue',
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildDeviceInfoCard() {
-    return Card(
-      elevation: 4,
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  '📊 Info ESP32',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.memory, color: Color(0xFF4ECDC4), size: 24),
+              SizedBox(width: 8),
+              Text(
+                'Info Perangkat',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF2D5A7E),
+                  fontFamily: 'ComicNeue',
                 ),
-                Spacer(),
-                if (widget.esp32Service.isConnected)
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.green,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      'ONLINE',
-                      style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
-                    ),
-                  )
-                else
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.orange,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      'OFFLINE',
-                      style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+
+          if (_deviceData['rssi'] != null)
+            _buildDeviceInfoRow('📶 Sinyal WiFi', '${_deviceData['rssi']} dBm'),
+          if (_deviceData['ssid'] != null)
+            _buildDeviceInfoRow('🌐 WiFi Terhubung', _deviceData['ssid']),
+          if (_deviceData['uptime'] != null)
+            _buildDeviceInfoRow(
+              '⏱️ Waktu Aktif',
+              _formatUptime(_deviceData['uptime']),
+            ),
+          if (_deviceData['free_heap'] != null)
+            _buildDeviceInfoRow(
+              '💾 Memory',
+              _formatBytes(_deviceData['free_heap']),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeviceInfoRow(String label, String value) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF666666),
+                fontFamily: 'ComicNeue',
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF333333),
+                fontFamily: 'ComicNeue',
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.right,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDiscoveryCard() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.search, color: Color(0xFFFE6D73), size: 24),
+              SizedBox(width: 8),
+              Text(
+                'Pencarian Perangkat',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF2D5A7E),
+                  fontFamily: 'ComicNeue',
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          SmoothPressButton(
+            onPressed: _isScanning
+                ? widget.esp32Service.stopDiscovery
+                : widget.esp32Service.startDiscovery,
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                color: _isScanning ? Color(0xFFFFA726) : Color(0xFF4ECDC4),
+                borderRadius: BorderRadius.circular(15),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_isScanning)
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  else
+                    Icon(Icons.search, color: Colors.white, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    _isScanning ? 'SEDANG MENCARI...' : 'MULAI PENCARIAN',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      fontFamily: 'ComicNeue',
                     ),
                   ),
+                ],
+              ),
+            ),
+          ),
+
+          if (_foundDevices.isNotEmpty) ...[
+            SizedBox(height: 16),
+            Text(
+              'Perangkat Ditemukan (${_foundDevices.length})',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2D5A7E),
+                fontFamily: 'ComicNeue',
+              ),
+            ),
+            SizedBox(height: 12),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: _foundDevices.map((ip) {
+                bool isCurrent = widget.esp32Service.deviceIP == ip;
+                return SmoothPressButton(
+                  onPressed: () {
+                    if (!isCurrent) {
+                      widget.esp32Service.connectToDevice(ip);
+                    }
+                  },
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isCurrent ? Color(0xFF4ECDC4) : Colors.grey[200],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isCurrent
+                            ? Color(0xFF2AA8A0)
+                            : Colors.grey[300]!,
+                        width: 2,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isCurrent
+                              ? Icons.check_circle
+                              : Icons.radio_button_unchecked,
+                          color: isCurrent ? Colors.white : Colors.grey[600],
+                          size: 16,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          ip,
+                          style: TextStyle(
+                            color: isCurrent ? Colors.white : Colors.grey[800],
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'ComicNeue',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+
+          if (_isConnected) ...[
+            SizedBox(height: 20),
+            Divider(),
+            SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: SmoothPressButton(
+                    onPressed: () {
+                      widget.esp32Service.requestDeviceStatus();
+                    },
+                    child: Container(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.refresh, color: Colors.white, size: 18),
+                          SizedBox(width: 8),
+                          Text(
+                            'REFRESH',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'ComicNeue',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: SmoothPressButton(
+                    onPressed: () {
+                      widget.esp32Service.pingDevice();
+                    },
+                    child: Container(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.purple,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.network_check,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'TEST',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'ComicNeue',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
-            SizedBox(height: 8),
-            if (_deviceData['status'] != null)
-              _buildInfoRow('Status', _deviceData['status']),
-            if (_deviceData['rssi'] != null)
-              _buildInfoRow('Sinyal WiFi', '${_deviceData['rssi']} dBm'),
-            if (_deviceData['ssid'] != null)
-              _buildInfoRow('WiFi Terhubung', _deviceData['ssid']),
-            if (_deviceData['uptime'] != null)
-              _buildInfoRow('Uptime', '${_formatUptime(_deviceData['uptime'])}'),
-            if (_deviceData['free_heap'] != null)
-              _buildInfoRow('Memory', '${_formatBytes(_deviceData['free_heap'])}'),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWiFiConfigCard() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.wifi, color: Color(0xFF4ECDC4), size: 24),
+              SizedBox(width: 8),
+              Text(
+                'Setup WiFi Baru',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF2D5A7E),
+                  fontFamily: 'ComicNeue',
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+
+          Text(
+            'Untuk perangkat baru, masukkan kredensial WiFi:',
+            style: TextStyle(
+              fontSize: 14,
+              color: Color(0xFF666666),
+              fontFamily: 'ComicNeue',
+            ),
+          ),
+          SizedBox(height: 16),
+
+          _buildInputField(
+            controller: _ssidController,
+            label: 'Nama WiFi (SSID)',
+            icon: Icons.wifi,
+            hint: 'Masukkan nama WiFi',
+          ),
+          SizedBox(height: 12),
+
+          _buildInputField(
+            controller: _passwordController,
+            label: 'Password WiFi',
+            icon: Icons.lock,
+            hint: 'Masukkan password',
+            obscureText: true,
+          ),
+          SizedBox(height: 20),
+
+          SmoothPressButton(
+            onPressed: _isProvisioning ? () {} : _provisionESP32,
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                color: _isProvisioning ? Colors.grey : Color(0xFFFE6D73),
+                borderRadius: BorderRadius.circular(15),
+                boxShadow: _isProvisioning
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 6,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_isProvisioning)
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  else
+                    Icon(Icons.send, color: Colors.white, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    _isProvisioning ? 'MENGIRIM...' : 'KIRIM KE PERANGKAT',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      fontFamily: 'ComicNeue',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    required String hint,
+    bool obscureText = false,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: obscureText,
+        style: TextStyle(fontFamily: 'ComicNeue', fontSize: 16),
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          border: InputBorder.none,
+          prefixIcon: Icon(icon, color: Color(0xFF4ECDC4)),
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
       ),
     );
@@ -318,213 +756,6 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
     return bytes.toString();
   }
 
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Text('$label: ', style: TextStyle(fontWeight: FontWeight.bold)),
-          Expanded(child: Text(value)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDiscoveryCard() {
-    bool isActuallyConnected = widget.esp32Service.isConnected;
-    
-    return Card(
-      elevation: 4,
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '🔍 Kontrol Pencarian',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _isScanning
-                        ? widget.esp32Service.stopDiscovery
-                        : widget.esp32Service.startDiscovery,
-                    icon: Icon(_isScanning ? Icons.stop : Icons.search),
-                    label: Text(
-                      _isScanning ? 'BERHENTI MENCARI' : 'MULAI MENCARI',
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _isScanning
-                          ? Colors.orange
-                          : Color(0xFF4ECDC4),
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (_foundDevices.isNotEmpty) ...[
-              SizedBox(height: 12),
-              Row(
-                children: [
-                  Text('Perangkat Ditemukan:'),
-                  Spacer(),
-                  Text(
-                    '${_foundDevices.length} device(s)',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
-              ),
-              SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: _foundDevices.map((ip) {
-                  bool isCurrent = widget.esp32Service.deviceIP == ip;
-                  return Chip(
-                    label: Text(
-                      ip,
-                      style: TextStyle(
-                        color: isCurrent ? Colors.white : Colors.black,
-                        fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    ),
-                    backgroundColor: isCurrent ? Colors.green : Colors.grey[300],
-                    deleteIcon: Icon(
-                      isCurrent ? Icons.check : Icons.link,
-                      color: isCurrent ? Colors.white : Colors.grey[600],
-                      size: 18,
-                    ),
-                    onDeleted: () {
-                      if (!isCurrent) {
-                        widget.esp32Service.connectToDevice(ip);
-                      }
-                    },
-                  );
-                }).toList(),
-              ),
-            ],
-            if (isActuallyConnected) ...[
-              SizedBox(height: 12),
-              Divider(),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        widget.esp32Service.requestDeviceStatus();
-                      },
-                      icon: Icon(Icons.refresh, size: 18),
-                      label: Text('REFRESH STATUS'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        widget.esp32Service.pingDevice();
-                      },
-                      icon: Icon(Icons.network_check, size: 18),
-                      label: Text('TEST PING'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.purple,
-                        foregroundColor: Colors.white,
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWiFiConfigCard() {
-    return Card(
-      elevation: 4,
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '📡 Konfigurasi WiFi ESP32',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 12),
-            Text(
-              'Kirim kredensial WiFi ke ESP32 untuk koneksi pertama',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
-            SizedBox(height: 12),
-            TextField(
-              controller: _ssidController,
-              decoration: InputDecoration(
-                labelText: 'Nama WiFi (SSID)',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.wifi),
-                hintText: 'Masukkan nama WiFi',
-              ),
-            ),
-            SizedBox(height: 12),
-            TextField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Password WiFi',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.lock),
-                hintText: 'Masukkan password WiFi',
-              ),
-            ),
-            SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _isProvisioning ? null : _provisionESP32,
-              icon: _isProvisioning 
-                  ? SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : Icon(Icons.send),
-              label: Text(_isProvisioning ? 'MENGIRIM...' : 'KIRIM KE ESP32'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFFFE6D73),
-                foregroundColor: Colors.white,
-                minimumSize: Size(double.infinity, 50),
-              ),
-            ),
-            if (_isProvisioning) ...[
-              SizedBox(height: 12),
-              LinearProgressIndicator(),
-              SizedBox(height: 8),
-              Text(
-                'Mengirim kredensial WiFi ke ESP32...\nTunggu hingga proses selesai.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
   void _provisionESP32() {
     if (_ssidController.text.isEmpty || _passwordController.text.isEmpty) {
       _showErrorDialog('Harap isi nama dan password WiFi');
@@ -541,18 +772,41 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(Icons.warning, color: Colors.orange),
-            SizedBox(width: 8),
-            Text('Perhatian'),
+            Icon(Icons.warning, color: Colors.orange, size: 28),
+            SizedBox(width: 12),
+            Text(
+              'Perhatian',
+              style: TextStyle(
+                fontFamily: 'ComicNeue',
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF333333),
+              ),
+            ),
           ],
         ),
-        content: Text(message),
+        content: Text(
+          message,
+          style: TextStyle(
+            fontFamily: 'ComicNeue',
+            fontSize: 16,
+            color: Color(0xFF666666),
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('OK'),
+            child: Text(
+              'MENGERTI',
+              style: TextStyle(
+                fontFamily: 'ComicNeue',
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF4ECDC4),
+              ),
+            ),
           ),
         ],
       ),
@@ -567,7 +821,7 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
     _devicesSubscription.cancel();
     _deviceDataSubscription.cancel();
     _provisioningSubscription.cancel();
-    
+
     _ssidController.dispose();
     _passwordController.dispose();
     super.dispose();

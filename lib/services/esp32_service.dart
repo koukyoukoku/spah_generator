@@ -11,15 +11,12 @@ class ESP32Service {
     _initializeService();
   }
 
-  // Core Components
   final Provisioner _provisioner = Provisioner.espTouch();
   final NetworkInfo _networkInfo = NetworkInfo();
   
-  // Network Sockets
   Socket? _tcpSocket;
   RawDatagramSocket? _udpSocket;
   
-  // State Management
   bool _tcpConnected = false;
   bool _isDiscovering = false;
   bool _isConnecting = false;
@@ -32,7 +29,6 @@ class ESP32Service {
   Timer? _discoveryTimer;
   Timer? _pingTimer;
 
-  // Stream Controllers
   final _statusController = StreamController<String>.broadcast();
   final _connectedController = StreamController<bool>.broadcast();
   final _devicesController = StreamController<List<String>>.broadcast();
@@ -40,7 +36,6 @@ class ESP32Service {
   final _scanningController = StreamController<bool>.broadcast();
   final _provisioningController = StreamController<bool>.broadcast();
 
-  // Public Stream Getters
   Stream<String> get statusStream => _statusController.stream;
   Stream<bool> get connectedStream => _connectedController.stream;
   Stream<List<String>> get devicesStream => _devicesController.stream;
@@ -50,24 +45,22 @@ class ESP32Service {
 
   // ========== INITIALIZATION ==========
   Future<void> _initializeService() async {
-    _updateStatus('🚀 Memulai layanan ESP32...');
+    _updateStatus('Starting ESP32...');
     
     try {
-      // Get WiFi info
       String? wifiName = await _networkInfo.getWifiName();
       String? wifiIP = await _networkInfo.getWifiIP();
       
-      _wifiName = wifiName?.replaceAll('"', '') ?? 'Tidak Dikenal';
+      _wifiName = wifiName?.replaceAll('"', '') ?? 'Unknown';
       _deviceIP = wifiIP ?? '';
       
-      _updateStatus('📡 WiFi: $_wifiName');
+      _updateStatus('WiFi: $_wifiName');
       
-      // Start auto-discovery setelah delay singkat
       await Future.delayed(Duration(seconds: 2));
       _startAutoDiscovery();
       
     } catch (e) {
-      _updateStatus('❌ Error inisialisasi: $e');
+      _updateStatus('❌ Error inilization: $e');
     }
   }
 
@@ -75,15 +68,12 @@ class ESP32Service {
   void _startAutoDiscovery() {
     _isDiscovering = true;
     _shouldAutoConnect = true;
-    _updateStatus('🔍 Memulai auto-discovery...');
-    
-    // Start UDP discovery
+    _updateStatus('Starting auto-discovery...');
     _startUDPDiscovery();
     
-    // Schedule periodic discovery
     _discoveryTimer = Timer.periodic(Duration(seconds: 15), (timer) {
       if (!_tcpConnected && _isDiscovering) {
-        _updateStatus('🔄 Mencari ulang perangkat...');
+        _updateStatus('Re-scan devices...');
         _startUDPDiscovery();
       }
     });
@@ -94,7 +84,7 @@ class ESP32Service {
     _shouldAutoConnect = false;
     _discoveryTimer?.cancel();
     _stopUDPDiscovery();
-    _updateStatus('⏹️ Discovery dihentikan');
+    _updateStatus('Discovery Stopped');
   }
 
   void startDiscovery() {
@@ -108,12 +98,11 @@ class ESP32Service {
     if (!_isDiscovering) return;
 
     _scanningController.add(true);
-    _updateStatus('🔍 Scanning jaringan untuk ESP32...');
+    _updateStatus('Scanning for ESP32...');
 
     try {
       await _stopUDPDiscovery();
-      
-      // Bind UDP socket
+    
       _udpSocket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
       _udpSocket!.broadcastEnabled = true;
 
@@ -125,15 +114,12 @@ class ESP32Service {
           }
         }
       });
-
-      // Send discovery broadcast
       await _sendUDPBroadcast();
 
-      // Auto-stop discovery after 10 seconds if no devices found
       Timer(Duration(seconds: 10), () {
         if (_foundDevices.isEmpty && _isDiscovering) {
           _scanningController.add(false);
-          _updateStatus('⏳ Tidak ada perangkat ditemukan. Mencari lagi...');
+          _updateStatus('No other devices found. Re-scanning...');
         }
       });
 
@@ -154,9 +140,8 @@ class ESP32Service {
         if (!_foundDevices.contains(deviceIP)) {
           _foundDevices.add(deviceIP);
           _devicesController.add(List.from(_foundDevices));
-          _updateStatus('🎯 Ditemukan ESP32: $deviceIP');
+          _updateStatus('ESP32 Found: $deviceIP');
 
-          // AUTO-CONNECT to discovered device dengan delay
           if (_shouldAutoConnect) {
             Future.delayed(Duration(milliseconds: 500), () {
               _autoConnectToDevice(deviceIP);
@@ -173,7 +158,6 @@ class ESP32Service {
 
   bool _isValidESP32Response(String message) {
     try {
-      // Coba parse JSON
       Map<String, dynamic> jsonResponse = json.decode(message);
       bool isValid = jsonResponse.containsKey('device') && 
                      jsonResponse['device'].toString().toLowerCase().contains('esp32');
@@ -182,7 +166,6 @@ class ESP32Service {
       return isValid;
       
     } catch (e) {
-      // Fallback ke string matching
       bool containsESP32 = message.toLowerCase().contains('esp32');
       print('🔄 Fallback validation: $containsESP32');
       return containsESP32;
@@ -195,7 +178,6 @@ class ESP32Service {
     String discoveryMessage = 'ESP32_DISCOVERY_REQUEST';
     List<int> data = utf8.encode(discoveryMessage);
 
-    // Send to broadcast addresses
     List<String> broadcastIPs = await _getBroadcastAddresses();
     
     for (String broadcastIP in broadcastIPs) {
@@ -211,7 +193,7 @@ class ESP32Service {
       }
     }
 
-    _updateStatus('📢 Mengirim broadcast discovery...');
+    _updateStatus('Sending broadcast discovery...');
   }
 
   Future<List<String>> _getBroadcastAddresses() async {
@@ -228,7 +210,6 @@ class ESP32Service {
       print('Error calculating broadcast: $e');
     }
 
-    // Fallback addresses
     if (addresses.isEmpty) {
       addresses.addAll([
         '255.255.255.255',
@@ -250,38 +231,32 @@ class ESP32Service {
 
   // ========== AUTO TCP CONNECTION ==========
   Future<void> _autoConnectToDevice(String ip) async {
-    // Cek apakah sudah terhubung ke IP yang sama
     if (_tcpConnected && _deviceIP == ip) {
-      print('🔄 Already connected to $ip, skipping...');
+      print('Already connected to $ip, skipping...');
       return;
     }
 
-    // Cek apakah sedang mencoba connect
     if (_isConnecting) {
       print('⏳ Already connecting to another device, skipping $ip');
       return;
     }
 
     _isConnecting = true;
-    _updateStatus('🔗 Menghubungkan ke $ip...');
+    _updateStatus('Connecting to $ip...');
 
     try {
-      // Stop discovery sementara
       _stopUDPDiscovery();
-      
-      // Close existing connection jika ada
+    
       await _disconnectTCP();
       
       print('🔌 Attempting TCP connection to $ip:1234');
       
-      // Establish new TCP connection dengan timeout
       _tcpSocket = await Socket.connect(
         ip, 
         1234, 
         timeout: Duration(seconds: 3)
       ).timeout(Duration(seconds: 5));
 
-      // Setup TCP listeners
       _tcpSocket!.listen(
         _handleTCPData,
         onError: _handleTCPError,
@@ -292,23 +267,20 @@ class ESP32Service {
       _tcpConnected = true;
       _deviceIP = ip;
       _connectedController.add(true);
-      _updateStatus('✅ Terhubung ke ESP32: $ip');
+      _updateStatus('✅ Connected to ESP32: $ip');
 
-      // Auto-handshake sequence
       await _performAutoHandshake();
 
-      // Start ping service
       _startPingService();
 
     } catch (e) {
-      print('❌ Gagal connect ke $ip: $e');
+      print('❌ Failed connect to $ip: $e');
       _tcpConnected = false;
       _connectedController.add(false);
-      _updateStatus('❌ Gagal connect: ${e.toString()}');
+      _updateStatus('❌ Failed connect: ${e.toString()}');
       
-      // Restart discovery jika gagal connect
       if (_isDiscovering) {
-        _updateStatus('🔄 Mencoba discovery ulang...');
+        _updateStatus('Attempting to Rescanning...');
         await Future.delayed(Duration(seconds: 2));
         _startUDPDiscovery();
       }
@@ -318,7 +290,7 @@ class ESP32Service {
   }
 
   Future<void> _performAutoHandshake() async {
-    print('🤝 Starting auto-handshake sequence...');
+    print('Starting auto-handshake sequence...');
     
     await Future.delayed(Duration(milliseconds: 300));
     _sendTCPMessage('HANDSHAKE');
@@ -329,7 +301,7 @@ class ESP32Service {
     await Future.delayed(Duration(milliseconds: 500));
     _sendTCPMessage('GET_WIFI_INFO');
     
-    print('✅ Auto-handshake sequence completed');
+    print('Auto-handshake sequence completed');
   }
 
   void _startPingService() {
@@ -343,7 +315,7 @@ class ESP32Service {
     });
   }
 
-  // ========== TCP MESSAGE HANDLING ==========
+  // ========================= TCP MESSAGE HANDLER =========================
   void _handleTCPData(List<int> data) {
     try {
       String message = utf8.decode(data).trim();
@@ -356,12 +328,11 @@ class ESP32Service {
   }
 
   void _processTCPMessage(String message) {
-    // Handle different message types
     if (message.startsWith('HELLO:')) {
       _updateStatus('👋 ${message.substring(6)}');
     } 
     else if (message == 'HANDSHAKE_ACK' || message.contains('READY')) {
-      _updateStatus('🤝 Handshake berhasil!');
+      _updateStatus('🤝 Handshake Success');
     }
     else if (message.startsWith('STATUS:')) {
       _handleStatusMessage(message.substring(7));
@@ -393,7 +364,7 @@ class ESP32Service {
       int? rssi = statusData['rssi'];
       
       if (rssi != null) {
-        _updateStatus('📊 Status: $status | Sinyal: ${rssi}dBm');
+        _updateStatus('📊 Status: $status | Signal: ${rssi}dBm');
       } else {
         _updateStatus('📊 Status: $status');
       }
@@ -430,16 +401,15 @@ class ESP32Service {
 
   void _handleTCPError(error) {
     print('❌ TCP Error: $error');
-    _updateStatus('❌ Koneksi terputus: $error');
+    _updateStatus('❌ Connection Disconnected: $error');
     _tcpConnected = false;
     _connectedController.add(false);
     _isConnecting = false;
     
     _disconnectTCP();
     
-    // Auto-reconnect logic
     if (_isDiscovering && _shouldAutoConnect) {
-      _updateStatus('🔄 Mencoba reconnect dalam 3 detik...');
+      _updateStatus('🔄 Trying to reconnect in 3 seconds...');
       Timer(Duration(seconds: 3), () {
         if (!_tcpConnected && _isDiscovering) {
           _startUDPDiscovery();
@@ -450,14 +420,13 @@ class ESP32Service {
 
   void _handleTCPDone() {
     print('📴 TCP Connection closed');
-    _updateStatus('📴 Koneksi terputus dari ESP32');
+    _updateStatus('📴 Connection Disconnected by ESP32');
     _tcpConnected = false;
     _connectedController.add(false);
     _isConnecting = false;
     
     _disconnectTCP();
     
-    // Auto-reconnect
     if (_isDiscovering && _shouldAutoConnect) {
       Timer(Duration(seconds: 2), () {
         if (!_tcpConnected) {
@@ -467,7 +436,7 @@ class ESP32Service {
     }
   }
 
-  // ========== PUBLIC METHODS ==========
+  // ==========- PUBLIC METHODS -==========
   void sendTCPMessage(String message) {
     if (_tcpSocket != null && _tcpConnected) {
       try {
@@ -478,7 +447,7 @@ class ESP32Service {
         _handleTCPError(e);
       }
     } else {
-      _updateStatus('❌ Tidak terhubung ke ESP32');
+      _updateStatus('❌ Not Connected to ESP32');
     }
   }
 
@@ -503,7 +472,7 @@ class ESP32Service {
 
   Future<void> startProvisioning(String ssid, String password) async {
     _provisioningController.add(true);
-    _updateStatus('📡 Mengirim kredensial WiFi ke ESP32...');
+    _updateStatus('📡 Sending WiFi Credentials to ESP32...');
 
     try {
       String? bssid = await _networkInfo.getWifiBSSID();
@@ -519,18 +488,17 @@ class ESP32Service {
       await Future.delayed(Duration(seconds: 8));
       
       _provisioningController.add(false);
-      _updateStatus('✅ WiFi credentials terkirim! ESP32 akan restart...');
+      _updateStatus('✅ WiFi credentials was sent! ESP32 Restarting...');
 
       _provisioner.stop();
 
-      // Restart discovery setelah provisioning
       Timer(Duration(seconds: 10), () {
         _startUDPDiscovery();
       });
 
     } catch (e) {
       _provisioningController.add(false);
-      _updateStatus('❌ Provisioning gagal: $e');
+      _updateStatus('❌ Provisioning failed: $e');
     }
   }
 

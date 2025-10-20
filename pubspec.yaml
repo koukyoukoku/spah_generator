@@ -38,10 +38,9 @@ dependencies:
   flutter_launcher_icons: ^0.13.1
   shared_preferences: ^2.5.3
   http: ^1.5.0
-  esp_provisioning_ble: ^1.0.0
   esp_smartconfig: ^3.0.0
-  flutter_esp_ble_prov: ^0.1.7
   network_info_plus: ^7.0.0
+  audioplayers: ^6.5.1
   
 
 dev_dependencies:
@@ -65,6 +64,18 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  fonts:
+    - family: ComicNeue
+      fonts:
+        - asset: fonts/ComicRelief-Bold.ttf
+          weight: 700
+        - asset: fonts/ComicRelief-Regular.ttf
+          weight: 400
+
+  assets:
+    - assets/audio/BubbleClick.mp3
+    - assets/audio/PopClick.mp3
 
   # To add assets to your application, add an assets section, like this:
   # assets:
