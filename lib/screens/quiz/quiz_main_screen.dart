@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:spah_generator/components/SmoothPress.dart';
+import 'package:spah_generator/screens/quiz/quiz_play_screen.dart';
 
 class QuizMainScreen extends StatefulWidget {
   @override
@@ -89,7 +90,7 @@ class _QuizMainScreenState extends State<QuizMainScreen> {
                         SizedBox(height: 30),
                         SmoothPressButton(
                           onPressed: () {
-                            _startRandomQuiz();
+                            _startQuiz();
                           },
                           child: Container(
                             width: double.infinity,
@@ -243,7 +244,10 @@ class _QuizMainScreenState extends State<QuizMainScreen> {
     );
   }
 
-  void _startRandomQuiz() {
-    print('Memulai kuis acak');
+  void _startQuiz() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => QuizPlayScreen()),
+    );
   }
 }

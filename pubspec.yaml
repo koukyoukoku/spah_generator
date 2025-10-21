@@ -41,6 +41,7 @@ dependencies:
   esp_smartconfig: ^3.0.0
   network_info_plus: ^7.0.0
   audioplayers: ^6.5.1
+  fsrs: ^2.0.1
   
 
 dev_dependencies:

@@ -13,10 +13,10 @@ class ESP32Service {
 
   final Provisioner _provisioner = Provisioner.espTouch();
   final NetworkInfo _networkInfo = NetworkInfo();
-  
+
   Socket? _tcpSocket;
   RawDatagramSocket? _udpSocket;
-  
+
   bool _tcpConnected = false;
   bool _isDiscovering = false;
   bool _isConnecting = false;
@@ -32,45 +32,44 @@ class ESP32Service {
   final _statusController = StreamController<String>.broadcast();
   final _connectedController = StreamController<bool>.broadcast();
   final _devicesController = StreamController<List<String>>.broadcast();
-  final _deviceDataController = StreamController<Map<String, dynamic>>.broadcast();
+  final _deviceDataController =
+      StreamController<Map<String, dynamic>>.broadcast();
   final _scanningController = StreamController<bool>.broadcast();
   final _provisioningController = StreamController<bool>.broadcast();
 
   Stream<String> get statusStream => _statusController.stream;
   Stream<bool> get connectedStream => _connectedController.stream;
   Stream<List<String>> get devicesStream => _devicesController.stream;
-  Stream<Map<String, dynamic>> get deviceDataStream => _deviceDataController.stream;
+  Stream<Map<String, dynamic>> get deviceDataStream =>
+      _deviceDataController.stream;
   Stream<bool> get scanningStream => _scanningController.stream;
   Stream<bool> get provisioningStream => _provisioningController.stream;
 
-  // ========== INITIALIZATION ==========
   Future<void> _initializeService() async {
     _updateStatus('Starting ESP32...');
-    
+
     try {
       String? wifiName = await _networkInfo.getWifiName();
       String? wifiIP = await _networkInfo.getWifiIP();
-      
+
       _wifiName = wifiName?.replaceAll('"', '') ?? 'Unknown';
       _deviceIP = wifiIP ?? '';
-      
+
       _updateStatus('WiFi: $_wifiName');
-      
+
       await Future.delayed(Duration(seconds: 2));
       _startAutoDiscovery();
-      
     } catch (e) {
-      _updateStatus('❌ Error inilization: $e');
+      _updateStatus('Error inilization: $e');
     }
   }
 
-  // ========== AUTO DISCOVERY SYSTEM ==========
   void _startAutoDiscovery() {
     _isDiscovering = true;
     _shouldAutoConnect = true;
     _updateStatus('Starting auto-discovery...');
     _startUDPDiscovery();
-    
+
     _discoveryTimer = Timer.periodic(Duration(seconds: 15), (timer) {
       if (!_tcpConnected && _isDiscovering) {
         _updateStatus('Re-scan devices...');
@@ -87,13 +86,6 @@ class ESP32Service {
     _updateStatus('Discovery Stopped');
   }
 
-  void startDiscovery() {
-    if (!_isDiscovering) {
-      _startAutoDiscovery();
-    }
-  }
-
-  // ========== UDP DISCOVERY ==========
   Future<void> _startUDPDiscovery() async {
     if (!_isDiscovering) return;
 
@@ -102,7 +94,7 @@ class ESP32Service {
 
     try {
       await _stopUDPDiscovery();
-    
+
       _udpSocket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
       _udpSocket!.broadcastEnabled = true;
 
@@ -114,18 +106,81 @@ class ESP32Service {
           }
         }
       });
-      await _sendUDPBroadcast();
 
-      Timer(Duration(seconds: 10), () {
+      await _scanAllNetworks();
+
+      Timer(Duration(seconds: 5), () {
         if (_foundDevices.isEmpty && _isDiscovering) {
           _scanningController.add(false);
-          _updateStatus('No other devices found. Re-scanning...');
+          _updateStatus('No devices found. Re-scanning...');
         }
       });
-
     } catch (e) {
       _scanningController.add(false);
-      _updateStatus('❌ UDP Discovery error: $e');
+      _updateStatus('UDP Discovery error: $e');
+    }
+  }
+
+  Future<void> _scanAllNetworks() async {
+    try {
+      List<NetworkInterface> interfaces = await NetworkInterface.list();
+
+      for (NetworkInterface interface in interfaces) {
+        for (InternetAddress address in interface.addresses) {
+          if (address.type == InternetAddressType.IPv4) {
+            String subnet = _getSubnet(address.address);
+            String broadcast = '$subnet.255';
+
+            _sendDiscoveryPacket(broadcast);
+          }
+        }
+      }
+
+      _scanCommonSubnets();
+    } catch (e) {
+      _scanCommonSubnets();
+    }
+  }
+
+  String _getSubnet(String ip) {
+    List<String> parts = ip.split('.');
+    if (parts.length == 4) {
+      return '${parts[0]}.${parts[1]}.${parts[2]}';
+    }
+    return '192.168.1';
+  }
+
+  void _scanCommonSubnets() {
+    List<String> commonSubnets = [
+      '192.168.1.255',
+      '192.168.0.255',
+      '192.168.4.255',
+      '10.0.0.255',
+      '10.65.176.255',
+      '172.16.0.255',
+      '172.17.0.255',
+      '172.18.0.255',
+      '172.19.0.255',
+      '172.20.0.255',
+      '255.255.255.255',
+    ];
+
+    for (String subnet in commonSubnets) {
+      _sendDiscoveryPacket(subnet);
+    }
+  }
+
+  void _sendDiscoveryPacket(String broadcastIP) {
+    if (_udpSocket == null) return;
+
+    try {
+      String discoveryMessage = 'ESP32_DISCOVERY_REQUEST';
+      List<int> data = utf8.encode(discoveryMessage);
+
+      _udpSocket!.send(data, InternetAddress(broadcastIP), 8888);
+      print('📢 Sent broadcast to: $broadcastIP');
+    } catch (e) {
+      print('❌ Broadcast to $broadcastIP failed: $e');
     }
   }
 
@@ -137,16 +192,20 @@ class ESP32Service {
       print('📨 UDP Response from $deviceIP: $message');
 
       if (_isValidESP32Response(message)) {
+        print('✅ Valid ESP32 response, proceeding with connection...');
         if (!_foundDevices.contains(deviceIP)) {
           _foundDevices.add(deviceIP);
           _devicesController.add(List.from(_foundDevices));
           _updateStatus('ESP32 Found: $deviceIP');
 
-          if (_shouldAutoConnect) {
-            Future.delayed(Duration(milliseconds: 500), () {
+          if (_shouldAutoConnect && !_tcpConnected && !_isConnecting) {
+            print('🚀 Auto-connect triggered for $deviceIP');
+            Future.delayed(Duration(milliseconds: 300), () {
               _autoConnectToDevice(deviceIP);
             });
           }
+        } else {
+          print('🔄 Device $deviceIP already in list');
         }
       } else {
         print('❌ Invalid ESP32 response: $message');
@@ -159,68 +218,17 @@ class ESP32Service {
   bool _isValidESP32Response(String message) {
     try {
       Map<String, dynamic> jsonResponse = json.decode(message);
-      bool isValid = jsonResponse.containsKey('device') && 
-                     jsonResponse['device'].toString().toLowerCase().contains('esp32');
-      
+      bool isValid =
+          jsonResponse.containsKey('device') &&
+          jsonResponse['device'].toString().toLowerCase().contains('esp32');
+
       print('✅ JSON Valid: $isValid - Device: ${jsonResponse['device']}');
       return isValid;
-      
     } catch (e) {
       bool containsESP32 = message.toLowerCase().contains('esp32');
       print('🔄 Fallback validation: $containsESP32');
       return containsESP32;
     }
-  }
-
-  Future<void> _sendUDPBroadcast() async {
-    if (_udpSocket == null) return;
-
-    String discoveryMessage = 'ESP32_DISCOVERY_REQUEST';
-    List<int> data = utf8.encode(discoveryMessage);
-
-    List<String> broadcastIPs = await _getBroadcastAddresses();
-    
-    for (String broadcastIP in broadcastIPs) {
-      try {
-        await _udpSocket!.send(
-          data, 
-          InternetAddress(broadcastIP), 
-          8888
-        );
-        print('📢 Sent broadcast to: $broadcastIP');
-      } catch (e) {
-        print('❌ Broadcast to $broadcastIP failed: $e');
-      }
-    }
-
-    _updateStatus('Sending broadcast discovery...');
-  }
-
-  Future<List<String>> _getBroadcastAddresses() async {
-    List<String> addresses = [];
-    
-    try {
-      if (_deviceIP.isNotEmpty) {
-        List<String> parts = _deviceIP.split('.');
-        if (parts.length == 4) {
-          addresses.add('${parts[0]}.${parts[1]}.${parts[2]}.255');
-        }
-      }
-    } catch (e) {
-      print('Error calculating broadcast: $e');
-    }
-
-    if (addresses.isEmpty) {
-      addresses.addAll([
-        '255.255.255.255',
-        '192.168.1.255', 
-        '192.168.0.255',
-        '192.168.4.255',
-        '10.0.0.255',
-      ]);
-    }
-
-    return addresses;
   }
 
   Future<void> _stopUDPDiscovery() async {
@@ -229,10 +237,9 @@ class ESP32Service {
     _scanningController.add(false);
   }
 
-  // ========== AUTO TCP CONNECTION ==========
   Future<void> _autoConnectToDevice(String ip) async {
     if (_tcpConnected && _deviceIP == ip) {
-      print('Already connected to $ip, skipping...');
+      print('✅ Already connected to $ip, skipping...');
       return;
     }
 
@@ -246,16 +253,16 @@ class ESP32Service {
 
     try {
       _stopUDPDiscovery();
-    
+
       await _disconnectTCP();
-      
+
       print('🔌 Attempting TCP connection to $ip:1234');
-      
+
       _tcpSocket = await Socket.connect(
-        ip, 
-        1234, 
-        timeout: Duration(seconds: 3)
-      ).timeout(Duration(seconds: 5));
+        ip,
+        1234,
+        timeout: Duration(seconds: 5),
+      );
 
       _tcpSocket!.listen(
         _handleTCPData,
@@ -272,15 +279,14 @@ class ESP32Service {
       await _performAutoHandshake();
 
       _startPingService();
-
     } catch (e) {
-      print('❌ Failed connect to $ip: $e');
+      print('❌ Failed to connect to $ip: $e');
       _tcpConnected = false;
       _connectedController.add(false);
-      _updateStatus('❌ Failed connect: ${e.toString()}');
-      
+      _updateStatus('❌ Failed to connect: ${e.toString()}');
+
       if (_isDiscovering) {
-        _updateStatus('Attempting to Rescanning...');
+        _updateStatus('🔄 Attempting to rescan...');
         await Future.delayed(Duration(seconds: 2));
         _startUDPDiscovery();
       }
@@ -290,22 +296,22 @@ class ESP32Service {
   }
 
   Future<void> _performAutoHandshake() async {
-    print('Starting auto-handshake sequence...');
-    
-    await Future.delayed(Duration(milliseconds: 300));
+    print('🔄 Starting auto-handshake sequence...');
+
+    await Future.delayed(Duration(milliseconds: 500));
     _sendTCPMessage('HANDSHAKE');
-    
+
     await Future.delayed(Duration(milliseconds: 500));
     _sendTCPMessage('GET_STATUS');
-    
+
     await Future.delayed(Duration(milliseconds: 500));
     _sendTCPMessage('GET_WIFI_INFO');
-    
-    print('Auto-handshake sequence completed');
+
+    print('✅ Auto-handshake sequence completed');
   }
 
   void _startPingService() {
-    _pingTimer = Timer.periodic(Duration(seconds: 10), (timer) {
+    _pingTimer = Timer.periodic(Duration(seconds: 25), (timer) {
       if (_tcpConnected) {
         String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
         _sendTCPMessage('PING:$timestamp');
@@ -315,41 +321,58 @@ class ESP32Service {
     });
   }
 
-  // ========================= TCP MESSAGE HANDLER =========================
   void _handleTCPData(List<int> data) {
     try {
       String message = utf8.decode(data).trim();
       print('📨 Received: $message');
-      
+
       _processTCPMessage(message);
     } catch (e) {
-      print('Error decoding TCP data: $e');
+      print('❌ Error decoding TCP data: $e');
     }
   }
 
   void _processTCPMessage(String message) {
+    // Coba parse sebagai JSON terlebih dahulu
+    try {
+      Map<String, dynamic> jsonData = json.decode(message);
+      String messageType = jsonData['type'] ?? '';
+
+      if (messageType == 'wifi_info') {
+        _handleWifiInfo(jsonData); // Kirim Map yang sudah di-parse
+        return;
+      } else if (messageType == 'status') {
+        _handleStatusMessage(
+          json.encode(jsonData),
+        ); // Tetap kirim string untuk konsistensi
+        return;
+      } else if (messageType == 'pong') {
+        String timestamp = jsonData['original_timestamp']?.toString() ?? '';
+        _handlePongMessage(timestamp);
+        return;
+      }
+    } catch (e) {}
+
     if (message.startsWith('HELLO:')) {
       _updateStatus('👋 ${message.substring(6)}');
-    } 
-    else if (message == 'HANDSHAKE_ACK' || message.contains('READY')) {
+    } else if (message == 'HANDSHAKE_ACK' || message.contains('READY')) {
       _updateStatus('🤝 Handshake Success');
-    }
-    else if (message.startsWith('STATUS:')) {
+    } else if (message.startsWith('STATUS:')) {
       _handleStatusMessage(message.substring(7));
-    }
-    else if (message.startsWith('PONG:')) {
+    } else if (message.startsWith('PONG:')) {
       _handlePongMessage(message.substring(5));
-    }
-    else if (message.startsWith('WIFI_INFO:')) {
-      _handleWifiInfo(message.substring(10));
-    }
-    else if (message.startsWith('RFID:')) {
+    } else if (message.startsWith('WIFI_INFO:')) {
+      try {
+        Map<String, dynamic> wifiInfo = json.decode(message.substring(10));
+        _handleWifiInfo(wifiInfo);
+      } catch (e) {
+        print('❌ Error parsing legacy WiFi info: $e');
+      }
+    } else if (message.startsWith('RFID:')) {
       _handleRFIDMessage(message.substring(5));
-    }
-    else if (message.startsWith('ERROR:')) {
+    } else if (message.startsWith('ERROR:')) {
       _updateStatus('❌ ${message.substring(6)}');
-    }
-    else {
+    } else {
       _updateStatus('📡 Data: $message');
     }
   }
@@ -359,10 +382,10 @@ class ESP32Service {
       Map<String, dynamic> statusData = json.decode(jsonStr);
       _deviceData.addAll(statusData);
       _deviceDataController.add(Map.from(_deviceData));
-      
+
       String status = statusData['status'] ?? 'Connected';
       int? rssi = statusData['rssi'];
-      
+
       if (rssi != null) {
         _updateStatus('📊 Status: $status | Signal: ${rssi}dBm');
       } else {
@@ -383,13 +406,15 @@ class ESP32Service {
     }
   }
 
-  void _handleWifiInfo(String jsonStr) {
+  void _handleWifiInfo(Map<String, dynamic> wifiInfo) {
     try {
-      Map<String, dynamic> wifiInfo = json.decode(jsonStr);
+      print("📡 WiFi Info: ${wifiInfo}");
       _deviceData.addAll(wifiInfo);
+      _wifiName = wifiInfo['ssid'] ?? _wifiName;
       _deviceDataController.add(Map.from(_deviceData));
+      print('asas ${_wifiName}');
     } catch (e) {
-      print('Error parsing WiFi info: $e');
+      print('❌ Error handling WiFi info: $e');
     }
   }
 
@@ -405,9 +430,9 @@ class ESP32Service {
     _tcpConnected = false;
     _connectedController.add(false);
     _isConnecting = false;
-    
+
     _disconnectTCP();
-    
+
     if (_isDiscovering && _shouldAutoConnect) {
       _updateStatus('🔄 Trying to reconnect in 3 seconds...');
       Timer(Duration(seconds: 3), () {
@@ -424,9 +449,9 @@ class ESP32Service {
     _tcpConnected = false;
     _connectedController.add(false);
     _isConnecting = false;
-    
+
     _disconnectTCP();
-    
+
     if (_isDiscovering && _shouldAutoConnect) {
       Timer(Duration(seconds: 2), () {
         if (!_tcpConnected) {
@@ -436,14 +461,13 @@ class ESP32Service {
     }
   }
 
-  // ==========- PUBLIC METHODS -==========
   void sendTCPMessage(String message) {
     if (_tcpSocket != null && _tcpConnected) {
       try {
         _tcpSocket!.write('$message\n');
         print('📤 Sent: $message');
       } catch (e) {
-        print('Error sending TCP: $e');
+        print('❌ Error sending TCP: $e');
         _handleTCPError(e);
       }
     } else {
@@ -486,7 +510,7 @@ class ESP32Service {
       );
 
       await Future.delayed(Duration(seconds: 8));
-      
+
       _provisioningController.add(false);
       _updateStatus('✅ WiFi credentials was sent! ESP32 Restarting...');
 
@@ -495,14 +519,18 @@ class ESP32Service {
       Timer(Duration(seconds: 10), () {
         _startUDPDiscovery();
       });
-
     } catch (e) {
       _provisioningController.add(false);
       _updateStatus('❌ Provisioning failed: $e');
     }
   }
 
-  // ========== UTILITY METHODS ==========
+  void startDiscovery() {
+    if (!_isDiscovering) {
+      _startAutoDiscovery();
+    }
+  }
+
   void _updateStatus(String status) {
     _lastStatus = status;
     _statusController.add(status);
@@ -516,10 +544,10 @@ class ESP32Service {
   Future<void> _disconnectTCP() async {
     _pingTimer?.cancel();
     _pingTimer = null;
-    
+
     _tcpSocket?.destroy();
     _tcpSocket = null;
-    
+
     _tcpConnected = false;
     _connectedController.add(false);
   }
@@ -529,7 +557,6 @@ class ESP32Service {
     stopDiscovery();
   }
 
-  // ========== GETTERS ==========
   String get wifiName => _wifiName;
   String get deviceIP => _deviceIP;
   bool get isConnected => _tcpConnected;
@@ -539,11 +566,10 @@ class ESP32Service {
   Map<String, dynamic> get deviceData => Map.from(_deviceData);
   String get lastStatus => _lastStatus;
 
-  // ========== CLEANUP ==========
   void dispose() {
     disconnect();
     _provisioner.stop();
-    
+
     _statusController.close();
     _connectedController.close();
     _devicesController.close();

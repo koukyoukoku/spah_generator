@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:spah_generator/services/esp32_service.dart';
 import 'package:spah_generator/components/SmoothPress.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ESP32ManagerScreen extends StatefulWidget {
   final ESP32Service esp32Service;
@@ -21,6 +22,7 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
   bool _isProvisioning = false;
   bool _isScanning = false;
   bool _isConnected = false;
+  bool _useESP32Mode = false;
   List<String> _foundDevices = [];
   Map<String, dynamic> _deviceData = {};
 
@@ -31,22 +33,51 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
   late StreamSubscription<Map<String, dynamic>> _deviceDataSubscription;
   late StreamSubscription<bool> _provisioningSubscription;
 
+  Timer? _pollTimer;
+
   @override
   void initState() {
     super.initState();
-    
+
     _wifiName = widget.esp32Service.wifiName;
     _isConnected = widget.esp32Service.isConnected;
     _status = widget.esp32Service.lastStatus;
     _ssidController.text = _wifiName;
-    
+
+    _loadESP32Preference();
     _setupStreamListeners();
-    
+
+    // Jika sudah terhubung saat membuka screen, minta status segera
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_isConnected) {
+      if (_isConnected) {
+        widget.esp32Service.requestDeviceStatus();
+        // mulai polling periodik untuk pembaruan realtime
+        _startPollingDeviceStatus();
+      } else if (!_isConnected && _useESP32Mode) {
         widget.esp32Service.startDiscovery();
       }
     });
+  }
+
+  Future<void> _loadESP32Preference() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _useESP32Mode = prefs.getBool('use_esp32_mode') ?? false;
+    });
+  }
+
+  Future<void> _saveESP32Preference(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('use_esp32_mode', value);
+    setState(() {
+      _useESP32Mode = value;
+    });
+    
+    if (value) {
+      widget.esp32Service.startDiscovery();
+    } else {
+      widget.esp32Service.stopDiscovery();
+    }
   }
 
   void _setupStreamListeners() {
@@ -58,7 +89,9 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
       }
     });
 
-    _scanningSubscription = widget.esp32Service.scanningStream.listen((scanning) {
+    _scanningSubscription = widget.esp32Service.scanningStream.listen((
+      scanning,
+    ) {
       if (mounted) {
         setState(() {
           _isScanning = scanning;
@@ -66,11 +99,21 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
       }
     });
 
-    _connectedSubscription = widget.esp32Service.connectedStream.listen((connected) {
+    _connectedSubscription = widget.esp32Service.connectedStream.listen((
+      connected,
+    ) {
       if (mounted) {
         setState(() {
           _isConnected = connected;
         });
+        if (connected) {
+          // ketika terhubung: minta status segera dan mulai polling
+          widget.esp32Service.requestDeviceStatus();
+          _startPollingDeviceStatus();
+        } else {
+          // hentikan polling saat terputus
+          _stopPollingDeviceStatus();
+        }
       }
     });
 
@@ -82,7 +125,9 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
       }
     });
 
-    _deviceDataSubscription = widget.esp32Service.deviceDataStream.listen((data) {
+    _deviceDataSubscription = widget.esp32Service.deviceDataStream.listen((
+      data,
+    ) {
       if (mounted) {
         setState(() {
           _deviceData = data;
@@ -90,13 +135,28 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
       }
     });
 
-    _provisioningSubscription = widget.esp32Service.provisioningStream.listen((provisioning) {
+    _provisioningSubscription = widget.esp32Service.provisioningStream.listen((
+      provisioning,
+    ) {
       if (mounted) {
         setState(() {
           _isProvisioning = provisioning;
         });
       }
     });
+  }
+
+  void _startPollingDeviceStatus() {
+    _pollTimer?.cancel();
+    // poll tiap 10 detik — sesuaikan interval bila perlu
+    _pollTimer = Timer.periodic(Duration(seconds: 5), (_) {
+      widget.esp32Service.requestDeviceStatus();
+    });
+  }
+  
+  void _stopPollingDeviceStatus() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
   }
 
   @override
@@ -136,13 +196,16 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
               child: Column(
                 children: [
                   SizedBox(height: 70),
+                  _buildModeToggleCard(),
+                  SizedBox(height: 20),
                   _buildConnectionCard(),
+                  SizedBox(height: 20),
+                  if (_useESP32Mode) _buildDiscoveryCard(),
                   SizedBox(height: 20),
                   if (_isConnected && _deviceData.isNotEmpty) 
                     _buildDeviceInfoCard(),
-                  _buildDiscoveryCard(),
                   SizedBox(height: 20),
-                  _buildWiFiConfigCard(),
+                  if (_useESP32Mode) _buildWiFiConfigCard(),
                   SizedBox(height: 20),
                 ],
               ),
@@ -151,7 +214,7 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
               top: 16,
               left: 21,
               child: SmoothPressButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pop(context, true),
                 child: Container(
                   width: 50,
                   height: 50,
@@ -180,9 +243,135 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
     );
   }
 
+  Widget _buildModeToggleCard() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 12,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: Color(0xFFFED766).withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.settings_input_antenna,
+              color: Color(0xFFFED766),
+              size: 28,
+            ),
+          ),
+          SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Mode Eksplorasi',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF2D5A7E),
+                    fontFamily: 'ComicNeue',
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  _useESP32Mode ? 'Menggunakan ESP32' : 'Menggunakan NFC',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF666666),
+                    fontFamily: 'ComicNeue',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: _useESP32Mode,
+            onChanged: _saveESP32Preference,
+            activeColor: Color(0xFF4ECDC4),
+            activeTrackColor: Color(0xFF4ECDC4).withOpacity(0.5),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildConnectionCard() {
     bool isActuallyConnected = widget.esp32Service.isConnected;
     String deviceIP = widget.esp32Service.deviceIP;
+
+    if (!_useESP32Mode) {
+      return Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF4ECDC4), Color(0xFF2AA8A0)],
+          ),
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 12,
+              offset: Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.nfc,
+                color: Colors.white,
+                size: 40,
+              ),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'MODE NFC AKTIF',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                fontFamily: 'ComicNeue',
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Gunakan NFC perangkat untuk eksplorasi benda',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.white.withOpacity(0.9),
+                fontFamily: 'ComicNeue',
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
 
     return Container(
       width: double.infinity,
@@ -221,7 +410,7 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
           ),
           SizedBox(height: 16),
           Text(
-            isActuallyConnected ? 'TERHUBUNG' : 'MENCOBA HUBUNG',
+            isActuallyConnected ? 'TERHUBUNG' : 'MENGHUBUNGKAN...',
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w700,
@@ -230,9 +419,8 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
             ),
           ),
           SizedBox(height: 8),
-
           Text(
-            _status,
+            _isConnected ? "Perangkat terhubung ke ESP32" : _status,
             style: TextStyle(
               fontSize: 16,
               color: Colors.white.withOpacity(0.9),
@@ -240,16 +428,14 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
             ),
             textAlign: TextAlign.center,
           ),
-
           if (isActuallyConnected && deviceIP.isNotEmpty) ...[
             SizedBox(height: 16),
             Divider(color: Colors.white.withOpacity(0.3)),
             SizedBox(height: 12),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildInfoItem(Icons.computer, 'IP Device', deviceIP),
+                _buildInfoItem(Icons.developer_board, 'IP Device', deviceIP),
                 _buildInfoItem(
                   Icons.wifi,
                   'WiFi',
@@ -320,7 +506,6 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
             ],
           ),
           SizedBox(height: 16),
-
           if (_deviceData['rssi'] != null)
             _buildDeviceInfoRow('📶 Sinyal WiFi', '${_deviceData['rssi']} dBm'),
           if (_deviceData['ssid'] != null)
@@ -404,7 +589,7 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
               ),
             ],
           ),
-          SizedBox(height: 16),
+          SizedBox(height: 20),
           SmoothPressButton(
             onPressed: _isScanning
                 ? widget.esp32Service.stopDiscovery
@@ -451,7 +636,6 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
               ),
             ),
           ),
-
           if (_foundDevices.isNotEmpty) ...[
             SizedBox(height: 16),
             Text(
@@ -513,11 +697,8 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
               }).toList(),
             ),
           ],
-
           if (_isConnected) ...[
             SizedBox(height: 20),
-            Divider(),
-            SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
@@ -621,7 +802,6 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
             ],
           ),
           SizedBox(height: 16),
-
           Text(
             'Untuk perangkat baru, masukkan kredensial WiFi:',
             style: TextStyle(
@@ -631,7 +811,6 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
             ),
           ),
           SizedBox(height: 16),
-
           _buildInputField(
             controller: _ssidController,
             label: 'Nama WiFi (SSID)',
@@ -639,7 +818,6 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
             hint: 'Masukkan nama WiFi',
           ),
           SizedBox(height: 12),
-
           _buildInputField(
             controller: _passwordController,
             label: 'Password WiFi',
@@ -648,7 +826,6 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
             obscureText: true,
           ),
           SizedBox(height: 20),
-
           SmoothPressButton(
             onPressed: _isProvisioning ? () {} : _provisionESP32,
             child: Container(
@@ -735,11 +912,11 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
       int minutes = (seconds % 3600) ~/ 60;
       int secs = seconds % 60;
       if (hours > 0) {
-        return '${hours}j ${minutes}m ${secs}d';
+        return "${hours}:${minutes.toString().padLeft(2, "0")}:${secs.toString().padLeft(2, "0")}";
       } else if (minutes > 0) {
-        return '${minutes}m ${secs}d';
+        return "${minutes}:${secs.toString().padLeft(2, "0")}";
       } else {
-        return '${secs}d';
+        return '${secs.toString().padLeft(2, "0")}';
       }
     }
     return uptime.toString();
@@ -822,6 +999,8 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
     _deviceDataSubscription.cancel();
     _provisioningSubscription.cancel();
 
+    _stopPollingDeviceStatus();
+    
     _ssidController.dispose();
     _passwordController.dispose();
     super.dispose();

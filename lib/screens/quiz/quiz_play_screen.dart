@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:spah_generator/components/SmoothPress.dart';
+import '../../utils/fsrs.dart';
 
 class QuizPlayScreen extends StatefulWidget {
   final Map<String, dynamic>? category;
@@ -16,35 +17,151 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
   bool _showResult = false;
   String? _selectedAnswer;
   bool _isCorrect = false;
+  late FSRSCardManager fsrsManager;
+  List<Map<String, dynamic>> _currentSessionQuestions = [];
 
   final List<Map<String, dynamic>> _questions = [
     {
-      'question': 'Apa warna apel?',
+      'question': 'Berapa jumlah kaki kucing?',
+      'options': ['2 kaki', '4 kaki', '6 kaki', '8 kaki'],
+      'correctAnswer': '4 kaki',
+      'image': '🐱',
+      'id': 'question_1',
+    },
+    {
+      'question': 'Apa warna langit di siang hari?',
       'options': ['Merah', 'Biru', 'Hijau', 'Kuning'],
+      'correctAnswer': 'Biru',
+      'image': '☁️',
+      'id': 'question_2',
+    },
+    {
+      'question': 'Manakah yang bukan buah-buahan?',
+      'options': ['Apel', 'Wortel', 'Jeruk', 'Mangga'],
+      'correctAnswer': 'Wortel',
+      'image': '🥕',
+      'id': 'question_3',
+    },
+    {
+      'question': 'Berapa hasil dari 5 + 3?',
+      'options': ['6', '7', '8', '9'],
+      'correctAnswer': '8',
+      'image': '🔢',
+      'id': 'question_4',
+    },
+    {
+      'question': 'Di mana ikan hidup?',
+      'options': ['Darat', 'Udara', 'Air', 'Gunung'],
+      'correctAnswer': 'Air',
+      'image': '🐟',
+      'id': 'question_5',
+    },
+    {
+      'question': 'Apa yang digunakan untuk menulis?',
+      'options': ['Sendok', 'Pensil', 'Piring', 'Gelas'],
+      'correctAnswer': 'Pensil',
+      'image': '✏️',
+      'id': 'question_6',
+    },
+    {
+      'question': 'Manakah yang merupakan warna pelangi?',
+      'options': ['Coklat', 'Abu-abu', 'Merah', 'Hitam'],
       'correctAnswer': 'Merah',
-      'image': '🍎'
+      'image': '🌈',
+      'id': 'question_7',
     },
     {
-      'question': 'Hewan apa yang mengeluarkan suara "meong"?',
-      'options': ['Anjing', 'Kucing', 'Sapi', 'Ayam'],
-      'correctAnswer': 'Kucing',
-      'image': '🐱'
+      'question': 'Kapan waktu untuk tidur?',
+      'options': ['Pagi', 'Siang', 'Sore', 'Malam'],
+      'correctAnswer': 'Malam',
+      'image': '🌙',
+      'id': 'question_8',
     },
     {
-      'question': 'Bentuk apa yang memiliki 4 sisi sama?',
-      'options': ['Lingkaran', 'Segitiga', 'Persegi', 'Segilima'],
-      'correctAnswer': 'Persegi',
-      'image': '⬜'
+      'question': 'Apa yang dipakai saat hujan?',
+      'options': ['Payung', 'Sendal', 'Topi', 'Kacamata'],
+      'correctAnswer': 'Payung',
+      'image': '☔',
+      'id': 'question_9',
+    },
+    {
+      'question': 'Siapa yang mengajar di sekolah?',
+      'options': ['Dokter', 'Polisi', 'Guru', 'Pilot'],
+      'correctAnswer': 'Guru',
+      'image': '👩‍🏫',
+      'id': 'question_10',
     },
   ];
+  @override
+  void initState() {
+    super.initState();
+    _initializeFSRS();
+    _currentSessionQuestions = _getDueQuestions();
+  }
+
+  void _initializeFSRS() {
+    fsrsManager = FSRSCardManager();
+
+    for (var question in _questions) {
+      if (fsrsManager.getCard(question['id']) == null) {
+        final newCard = fsrsManager.fsrs.createCard();
+        fsrsManager.updateCard(question['id'], newCard);
+      }
+    }
+  }
+
+  FSRSPerformance _getPerformanceRating(
+    bool isCorrect,
+    int responseTimeSeconds,
+    int attempts,
+  ) {
+    if (!isCorrect) {
+      return FSRSPerformance.again;
+    }
+
+    if (responseTimeSeconds < 3) {
+      return FSRSPerformance.easy;
+    } else if (responseTimeSeconds < 8) {
+      return FSRSPerformance.good;
+    } else {
+      return FSRSPerformance.hard;
+    }
+  }
+
+  List<Map<String, dynamic>> _getDueQuestions() {
+    final dueQuestionIds = fsrsManager.getDueCards();
+
+    final dueQuestions = _questions
+        .where((question) => dueQuestionIds.contains(question['id']))
+        .toList();
+
+    dueQuestions.sort((a, b) {
+      final masteryA = fsrsManager.getMasteryLevel(a['id']);
+      final masteryB = fsrsManager.getMasteryLevel(b['id']);
+      return masteryA.compareTo(masteryB);
+    });
+
+    if (dueQuestions.isEmpty) {
+      final allQuestions = List<Map<String, dynamic>>.from(_questions);
+      allQuestions.sort((a, b) {
+        final masteryA = fsrsManager.getMasteryLevel(a['id']);
+        final masteryB = fsrsManager.getMasteryLevel(b['id']);
+        return masteryA.compareTo(masteryB);
+      });
+
+      return allQuestions.take(3).toList();
+    }
+
+    return dueQuestions;
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (_currentQuestionIndex >= _questions.length) {
+    if (_currentQuestionIndex >= _currentSessionQuestions.length) {
       return _buildCompletionScreen();
     }
 
-    var currentQuestion = _questions[_currentQuestionIndex];
+    var currentQuestion = _currentSessionQuestions[_currentQuestionIndex];
 
     return Scaffold(
       backgroundColor: Color(0xFFE8F4F8),
@@ -103,6 +220,12 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
               ),
             ),
 
+            Positioned(
+              top: 16,
+              right: 16,
+              child: _buildFSRSProgress(currentQuestion['id']),
+            ),
+
             Column(
               children: [
                 SizedBox(height: 40),
@@ -127,10 +250,11 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
                           child: Column(
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    'Pertanyaan ${_currentQuestionIndex + 1}/${_questions.length}',
+                                    'Pertanyaan ${_currentQuestionIndex + 1}/${_currentSessionQuestions.length}',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
@@ -151,7 +275,9 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
                               ),
                               SizedBox(height: 12),
                               LinearProgressIndicator(
-                                value: (_currentQuestionIndex + 1) / _questions.length,
+                                value:
+                                    (_currentQuestionIndex + 1) /
+                                    _currentSessionQuestions.length,
                                 backgroundColor: Colors.grey[300],
                                 color: Color(0xFF4ECDC4),
                                 borderRadius: BorderRadius.circular(10),
@@ -202,47 +328,191 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
                               ),
                             ],
                           ),
-                          child: Text(
-                            currentQuestion['question'],
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF2D5A7E),
-                              fontFamily: 'ComicNeue',
-                            ),
-                            textAlign: TextAlign.center,
+                          child: Column(
+                            children: [
+                              Text(
+                                currentQuestion['question'],
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF2D5A7E),
+                                  fontFamily: 'ComicNeue',
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              SizedBox(height: 8),
+                              _buildCardInfo(currentQuestion['id']),
+                            ],
                           ),
                         ),
 
                         SizedBox(height: 30),
-                        ...(currentQuestion['options'] as List<String>).map((option) => 
-                          _buildOptionButton(option, currentQuestion['correctAnswer'])
-                        ).toList(),
+                        ...(currentQuestion['options'] as List<String>)
+                            .map(
+                              (option) => _buildOptionButton(
+                                option,
+                                currentQuestion['correctAnswer'],
+                                currentQuestion['id'],
+                                currentQuestion['options'] as List<String>,
+                              ),
+                            )
+                            .toList(),
                       ],
                     ),
                   ),
                 ),
               ],
             ),
-            if (_showResult)
-              _buildResultOverlay(),
+            if (_showResult) _buildResultOverlay(currentQuestion['id']),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildOptionButton(String option, String correctAnswer) {
+  Widget _buildFSRSProgress(String questionId) {
+    final card = fsrsManager.getCard(questionId);
+    if (card == null) return SizedBox();
+
+    final daysUntilDue = card.dueDate.difference(DateTime.now()).inDays;
+    final masteryLevel = fsrsManager.getMasteryLevel(questionId);
+
+    return Container(
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildMasteryIndicator(masteryLevel),
+          SizedBox(height: 4),
+          Text(
+            daysUntilDue <= 0 ? 'Sekarang' : '$daysUntilDue hari',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: _getDueColor(daysUntilDue),
+              fontFamily: 'ComicNeue',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMasteryIndicator(double mastery) {
+    Color color;
+    String level;
+
+    if (mastery < 0.3) {
+      color = Color(0xFFFE6D73);
+      level = 'Baru';
+    } else if (mastery < 0.7) {
+      color = Color(0xFFFED766);
+      level = 'Sedang';
+    } else {
+      color = Color(0xFF4ECDC4);
+      level = 'Mahir';
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        SizedBox(width: 4),
+        Text(
+          level,
+          style: TextStyle(
+            fontSize: 10,
+            color: color,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Color _getDueColor(int daysUntilDue) {
+    if (daysUntilDue <= 0) return Color(0xFFFE6D73);
+    if (daysUntilDue <= 2) return Color(0xFFFED766);
+    return Color(0xFF4ECDC4);
+  }
+
+  Widget _buildCardInfo(String questionId) {
+    final card = fsrsManager.getCard(questionId);
+    if (card == null) return SizedBox();
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildInfoChip(
+          'Stability: ${card.stability.toStringAsFixed(1)}',
+          Icons.timeline_rounded,
+          Color(0xFF4ECDC4),
+        ),
+        SizedBox(width: 8),
+        _buildInfoChip(
+          'Difficulty: ${card.difficulty.toStringAsFixed(1)}',
+          Icons.school_rounded,
+          Color(0xFFFE6D73),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoChip(String text, IconData icon, Color color) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          SizedBox(width: 4),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 10,
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOptionButton(
+    String option,
+    String correctAnswer,
+    String questionId,
+    List<String> options,
+  ) {
     bool isSelected = _selectedAnswer == option;
     bool isCorrect = option == correctAnswer;
-    
+
     Color backgroundColor = Colors.white;
     Color borderColor = Color(0xFF4ECDC4).withOpacity(0.3);
     Color textColor = Color(0xFF2D5A7E);
 
     if (_showResult) {
       if (isSelected) {
-        backgroundColor = isCorrect ? Color(0xFF4ECDC4).withOpacity(0.2) : Color(0xFFFE6D73).withOpacity(0.2);
+        backgroundColor = isCorrect
+            ? Color(0xFF4ECDC4).withOpacity(0.2)
+            : Color(0xFFFE6D73).withOpacity(0.2);
         borderColor = isCorrect ? Color(0xFF4ECDC4) : Color(0xFFFE6D73);
         textColor = isCorrect ? Color(0xFF2D5A7E) : Color(0xFF2D5A7E);
       } else if (isCorrect) {
@@ -254,17 +524,16 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
     return Container(
       margin: EdgeInsets.only(bottom: 12),
       child: SmoothPressButton(
-        onPressed: _showResult ? () {} : () => _selectAnswer(option, correctAnswer),
+        onPressed: _showResult
+            ? () {}
+            : () => _selectAnswer(option, correctAnswer, questionId),
         child: Container(
           width: double.infinity,
           padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: backgroundColor,
             borderRadius: BorderRadius.circular(15),
-            border: Border.all(
-              color: borderColor,
-              width: 2,
-            ),
+            border: Border.all(color: borderColor, width: 2),
             boxShadow: [
               BoxShadow(
                 color: Colors.black12,
@@ -281,19 +550,17 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
                 decoration: BoxDecoration(
                   color: Color(0xFF4ECDC4).withOpacity(0.1),
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Color(0xFF4ECDC4).withOpacity(0.3),
-                  ),
+                  border: Border.all(color: Color(0xFF4ECDC4).withOpacity(0.3)),
                 ),
                 child: Center(
                   child: Text(
-                      String.fromCharCode(65 + (_questions[_currentQuestionIndex]['options'].indexOf(option) as int)),
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF4ECDC4),
-                      ),
+                    String.fromCharCode(65 + (options.indexOf(option))),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF4ECDC4),
                     ),
+                  ),
                 ),
               ),
               SizedBox(width: 16),
@@ -320,7 +587,10 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
     );
   }
 
-  Widget _buildResultOverlay() {
+  Widget _buildResultOverlay(String questionId) {
+    final card = fsrsManager.getCard(questionId);
+    final masteryLevel = fsrsManager.getMasteryLevel(questionId);
+
     return Container(
       color: Colors.black54,
       child: Center(
@@ -358,9 +628,9 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
               ),
               SizedBox(height: 10),
               Text(
-                _isCorrect 
-                  ? 'Kamu mendapatkan 10 poin!'
-                  : 'Jawaban yang benar: ${_questions[_currentQuestionIndex]['correctAnswer']}',
+                _isCorrect
+                    ? 'Kamu mendapatkan 10 poin!'
+                    : 'Jawaban yang benar: ${_getQuestionById(questionId)['correctAnswer']}',
                 style: TextStyle(
                   fontSize: 16,
                   color: Color(0xFF666666),
@@ -368,6 +638,12 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
                 ),
                 textAlign: TextAlign.center,
               ),
+
+              if (card != null) ...[
+                SizedBox(height: 20),
+                _buildMasteryProgress(masteryLevel),
+              ],
+
               SizedBox(height: 30),
               SmoothPressButton(
                 onPressed: _nextQuestion,
@@ -395,7 +671,57 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
     );
   }
 
+  Widget _buildMasteryProgress(double mastery) {
+    return Container(
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Color(0xFFE8F4F8),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Color(0xFF4ECDC4).withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'Tingkat Penguasaan',
+            style: TextStyle(
+              fontSize: 14,
+              color: Color(0xFF2D5A7E),
+              fontWeight: FontWeight.w600,
+              fontFamily: 'ComicNeue',
+            ),
+          ),
+          SizedBox(height: 8),
+          LinearProgressIndicator(
+            value: mastery,
+            backgroundColor: Colors.grey[300],
+            color: _getMasteryColor(mastery),
+            borderRadius: BorderRadius.circular(10),
+            minHeight: 8,
+          ),
+          SizedBox(height: 4),
+          Text(
+            '${(mastery * 100).toStringAsFixed(0)}%',
+            style: TextStyle(
+              fontSize: 12,
+              color: Color(0xFF666666),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getMasteryColor(double mastery) {
+    if (mastery < 0.3) return Color(0xFFFE6D73);
+    if (mastery < 0.7) return Color(0xFFFED766);
+    return Color(0xFF4ECDC4);
+  }
+
   Widget _buildCompletionScreen() {
+    final dueQuestions = _getDueQuestions();
+    final totalMastered = fsrsManager.getMasteredCount();
+
     return Scaffold(
       backgroundColor: Color(0xFFE8F4F8),
       body: SafeArea(
@@ -413,7 +739,6 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
                 ),
               ),
             ),
-
             Positioned(
               bottom: -80,
               left: -40,
@@ -463,24 +788,30 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
                         SizedBox(height: 30),
 
                         Text(
-                          'Kuis Selesai!',
+                          dueQuestions.isEmpty
+                              ? 'Tidak Ada Review Hari Ini!'
+                              : 'Sesi Selesai!',
                           style: TextStyle(
                             fontSize: 36,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFF2D5A7E),
                             fontFamily: 'ComicNeue',
                           ),
+                          textAlign: TextAlign.center,
                         ),
 
                         SizedBox(height: 15),
 
                         Text(
-                          'Selamat! Kamu telah menyelesaikan kuis',
+                          dueQuestions.isEmpty
+                              ? 'Semua materi sudah direview. Kembali lagi besok!'
+                              : 'Bagus! Kamu telah menyelesaikan sesi latihan hari ini',
                           style: TextStyle(
                             fontSize: 16,
                             color: Color(0xFF666666),
                             fontFamily: 'ComicNeue',
                           ),
+                          textAlign: TextAlign.center,
                         ),
 
                         SizedBox(height: 40),
@@ -504,7 +835,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
                           child: Column(
                             children: [
                               Text(
-                                'Skor Akhir',
+                                'Progress Pembelajaran',
                                 style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.w700,
@@ -522,7 +853,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
                                 ),
                               ),
                               Text(
-                                'Poin',
+                                'Poin Hari Ini',
                                 style: TextStyle(
                                   fontSize: 16,
                                   color: Color(0xFF666666),
@@ -531,10 +862,32 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
                               ),
                               SizedBox(height: 20),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
                                 children: [
-                                  _buildCompletionStat('Benar', '${(_score / 10).toInt()}/${_questions.length}'),
-                                  _buildCompletionStat('Salah', '${_questions.length - (_score / 10).toInt()}/${_questions.length}'),
+                                  _buildCompletionStat(
+                                    'Due Besok',
+                                    '${_getTomorrowDueCount()}',
+                                  ),
+                                  _buildCompletionStat(
+                                    'Telah Dikuasai',
+                                    '$totalMastered/${_questions.length}',
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 20),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
+                                children: [
+                                  _buildCompletionStat(
+                                    'Benar',
+                                    '${_score ~/ 10}/${_currentSessionQuestions.length}',
+                                  ),
+                                  _buildCompletionStat(
+                                    'Salah',
+                                    '${_currentSessionQuestions.length - (_score ~/ 10)}/${_currentSessionQuestions.length}',
+                                  ),
                                 ],
                               ),
                             ],
@@ -585,7 +938,9 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
                                     borderRadius: BorderRadius.circular(15),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Color(0xFF4ECDC4).withOpacity(0.3),
+                                        color: Color(
+                                          0xFF4ECDC4,
+                                        ).withOpacity(0.3),
                                         blurRadius: 8,
                                         offset: Offset(0, 4),
                                       ),
@@ -593,7 +948,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
                                   ),
                                   child: Center(
                                     child: Text(
-                                      'ULANGI',
+                                      'LATIH LAGI',
                                       style: TextStyle(
                                         fontSize: 16,
                                         color: Colors.white,
@@ -617,6 +972,10 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
         ),
       ),
     );
+  }
+
+  int _getTomorrowDueCount() {
+    return fsrsManager.getCardsDueInNextDays(1).length;
   }
 
   Widget _buildCompletionStat(String title, String value) {
@@ -643,16 +1002,44 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
     );
   }
 
-  void _selectAnswer(String selectedAnswer, String correctAnswer) {
+  void _selectAnswer(
+    String selectedAnswer,
+    String correctAnswer,
+    String questionId,
+  ) {
+    bool isCorrect = selectedAnswer == correctAnswer;
+
+    int responseTimeSeconds = 5; 
+    int attempts = 1;
+
+    FSRSPerformance performance = _getPerformanceRating(
+      isCorrect,
+      responseTimeSeconds,
+      attempts,
+    );
+
+    final review = fsrsManager.reviewCard(questionId, performance);
+
     setState(() {
       _selectedAnswer = selectedAnswer;
-      _isCorrect = selectedAnswer == correctAnswer;
+      _isCorrect = isCorrect;
       _showResult = true;
-      
+
       if (_isCorrect) {
         _score += 10;
       }
     });
+
+    print('Question: ${_getQuestionById(questionId)['question']}');
+    print('Performance: ${performance.toString()}');
+    print('Next due: ${review.card.dueDate}');
+    print(
+      'Mastery: ${(fsrsManager.getMasteryLevel(questionId) * 100).toStringAsFixed(1)}%',
+    );
+  }
+
+  Map<String, dynamic> _getQuestionById(String id) {
+    return _questions.firstWhere((question) => question['id'] == id);
   }
 
   void _nextQuestion() {
@@ -669,6 +1056,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
       _score = 0;
       _showResult = false;
       _selectedAnswer = null;
+      _currentSessionQuestions = _getDueQuestions();
     });
   }
 
@@ -678,20 +1066,13 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
       builder: (context) => AlertDialog(
         title: Text(
           'Keluar Kuis?',
-          style: TextStyle(
-            fontFamily: 'ComicNeue',
-            color: Color(0xFF2D5A7E),
-          ),
+          style: TextStyle(fontFamily: 'ComicNeue', color: Color(0xFF2D5A7E)),
         ),
         content: Text(
           'Progress kuis akan hilang jika kamu keluar sekarang.',
-          style: TextStyle(
-            fontFamily: 'ComicNeue',
-          ),
+          style: TextStyle(fontFamily: 'ComicNeue'),
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

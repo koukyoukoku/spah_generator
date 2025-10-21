@@ -7,6 +7,7 @@ import 'parent_control/esp32_manager_screen.dart';
 import 'package:spah_generator/services/esp32_service.dart';
 import 'package:spah_generator/components/SmoothPress.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MenuUtama extends StatefulWidget {
   final ESP32Service esp32Service;
@@ -21,14 +22,19 @@ class _MenuUtamaState extends State<MenuUtama> {
   bool _isConnectedToESP32 = false;
   String _connectionStatus = 'Mencari perangkat...';
   Map<String, dynamic> _deviceData = {};
+  bool _useESP32Mode = false;
 
-  final AudioPlayer _audioPlayer =
-      AudioPlayer();
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   @override
   void initState() {
     super.initState();
     _setupConnectionListener();
+    _initializeApp();
+  }
+
+  void _initializeApp() async {
+    await _loadESP32Preference();
   }
 
   void _setupConnectionListener() {
@@ -57,6 +63,21 @@ class _MenuUtamaState extends State<MenuUtama> {
     });
   }
 
+  Future<void> _loadESP32Preference() async {
+    final prefs = await SharedPreferences.getInstance();
+    bool useESP32Mode = prefs.getBool('use_esp32_mode') ?? false;
+    
+    if (mounted) {
+      setState(() {
+        _useESP32Mode = useESP32Mode;
+      });
+    }
+    
+    if (_useESP32Mode && !_isConnectedToESP32) {
+      widget.esp32Service.startDiscovery();
+    }
+  }
+
   void _openParentControl(BuildContext context) {
     Navigator.push(
       context,
@@ -77,17 +98,33 @@ class _MenuUtamaState extends State<MenuUtama> {
     );
   }
 
-  void _openESP32Manager(BuildContext context) {
-    Navigator.push(
+  void _openESP32Manager(BuildContext context) async {
+    try {
+      await _audioPlayer.setVolume(1.0);
+      await _audioPlayer.play(AssetSource('audio/PopClick.mp3'));
+    } catch (e, st) {
+      debugPrint('Gagal mainkan audio: $e\n$st');
+    }
+    
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) =>
             ESP32ManagerScreen(esp32Service: widget.esp32Service),
       ),
     );
+    
+    if (mounted && result == true) {
+      await _loadESP32Preference();
+    }
   }
 
   Future<void> _startGame(BuildContext context) async {
+    if (_useESP32Mode && !_isConnectedToESP32) {
+      _showConnectionError(context);
+      return;
+    }
+
     try {
       await _audioPlayer.setVolume(1.0);
       await _audioPlayer.play(AssetSource('audio/BubbleClick.mp3'));
@@ -101,6 +138,11 @@ class _MenuUtamaState extends State<MenuUtama> {
   }
 
   Future<void> _startQuiz(BuildContext context) async {
+    if (_useESP32Mode && !_isConnectedToESP32) {
+      _showConnectionError(context);
+      return;
+    }
+
     try {
       await _audioPlayer.setVolume(1.0);
       await _audioPlayer.play(AssetSource('audio/BubbleClick.mp3'));
@@ -174,15 +216,17 @@ class _MenuUtamaState extends State<MenuUtama> {
                               width: 12,
                               height: 12,
                               decoration: BoxDecoration(
-                                color: _isConnectedToESP32
-                                    ? Colors.green
-                                    : Colors.orange,
+                                color: _useESP32Mode
+                                    ? (_isConnectedToESP32 ? Colors.green : Colors.orange)
+                                    : Colors.blue,
                                 shape: BoxShape.circle,
                               ),
                             ),
                             SizedBox(width: 8),
                             Text(
-                              _isConnectedToESP32 ? "Terhubung" : "Mencari...",
+                              _useESP32Mode
+                                  ? (_isConnectedToESP32 ? "Terhubung ESP32" : "Mencari ESP32...")
+                                  : "Mode NFC Aktif",
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -244,7 +288,7 @@ class _MenuUtamaState extends State<MenuUtama> {
                             icon: Icons.play_arrow_rounded,
                             text: 'MULAI',
                             emoji: '🚀',
-                            isEnabled: true,
+                            isEnabled: !_useESP32Mode || _isConnectedToESP32,
                           ),
                         ),
 
@@ -257,7 +301,7 @@ class _MenuUtamaState extends State<MenuUtama> {
                             icon: Icons.quiz_rounded,
                             text: 'KUIS',
                             emoji: '🎯',
-                            isEnabled: true,
+                            isEnabled: !_useESP32Mode || _isConnectedToESP32,
                           ),
                         ),
                       ],
@@ -291,18 +335,7 @@ class _MenuUtamaState extends State<MenuUtama> {
                       ),
 
                       SmoothPressButton(
-                        onPressed: () async {
-                          try {
-                            await _audioPlayer.setVolume(1.0);
-                            await _audioPlayer.play(
-                              AssetSource('audio/PopClick.mp3'),
-                            );
-                          } catch (e, st) {
-                            _openParentControl(context);
-                            debugPrint('Gagal mainkan audio: $e\n$st');
-                          }
-                          _openESP32Manager(context);
-                        },
+                        onPressed: () => _openESP32Manager(context),
                         child: Stack(
                           children: [
                             _BottomActionButton(
@@ -310,7 +343,7 @@ class _MenuUtamaState extends State<MenuUtama> {
                               text: 'Pengaturan',
                               color: Color(0xFFFE6D73),
                             ),
-                            if (!_isConnectedToESP32)
+                            if (_useESP32Mode && !_isConnectedToESP32)
                               Positioned(
                                 top: 0,
                                 right: 0,
@@ -428,15 +461,17 @@ class _MainActionButton extends StatelessWidget {
       width: double.infinity,
       height: 130,
       decoration: BoxDecoration(
-        color: color,
+        color: isEnabled ? color : color.withOpacity(0.5),
         borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 12,
-            offset: Offset(0, 6),
-          ),
-        ],
+        boxShadow: isEnabled
+            ? [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 12,
+                  offset: Offset(0, 6),
+                ),
+              ]
+            : null,
         gradient: isEnabled
             ? LinearGradient(
                 begin: Alignment.topLeft,
