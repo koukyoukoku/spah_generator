@@ -333,18 +333,17 @@ class ESP32Service {
   }
 
   void _processTCPMessage(String message) {
-    // Coba parse sebagai JSON terlebih dahulu
     try {
       Map<String, dynamic> jsonData = json.decode(message);
       String messageType = jsonData['type'] ?? '';
 
       if (messageType == 'wifi_info') {
-        _handleWifiInfo(jsonData); // Kirim Map yang sudah di-parse
+        _handleWifiInfo(jsonData); 
         return;
       } else if (messageType == 'status') {
         _handleStatusMessage(
           json.encode(jsonData),
-        ); // Tetap kirim string untuk konsistensi
+        );
         return;
       } else if (messageType == 'pong') {
         String timestamp = jsonData['original_timestamp']?.toString() ?? '';

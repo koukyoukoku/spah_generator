@@ -47,11 +47,9 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
     _loadESP32Preference();
     _setupStreamListeners();
 
-    // Jika sudah terhubung saat membuka screen, minta status segera
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_isConnected) {
         widget.esp32Service.requestDeviceStatus();
-        // mulai polling periodik untuk pembaruan realtime
         _startPollingDeviceStatus();
       } else if (!_isConnected && _useESP32Mode) {
         widget.esp32Service.startDiscovery();
@@ -107,11 +105,9 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
           _isConnected = connected;
         });
         if (connected) {
-          // ketika terhubung: minta status segera dan mulai polling
           widget.esp32Service.requestDeviceStatus();
           _startPollingDeviceStatus();
         } else {
-          // hentikan polling saat terputus
           _stopPollingDeviceStatus();
         }
       }
@@ -148,7 +144,6 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
 
   void _startPollingDeviceStatus() {
     _pollTimer?.cancel();
-    // poll tiap 10 detik — sesuaikan interval bila perlu
     _pollTimer = Timer.periodic(Duration(seconds: 5), (_) {
       widget.esp32Service.requestDeviceStatus();
     });
