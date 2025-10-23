@@ -141,6 +141,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
       return masteryA.compareTo(masteryB);
     });
 
+    // Jika tidak ada soal yang due, kembalikan semua soal
     if (dueQuestions.isEmpty) {
       final allQuestions = List<Map<String, dynamic>>.from(_questions);
       allQuestions.sort((a, b) {
@@ -149,7 +150,8 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
         return masteryA.compareTo(masteryB);
       });
 
-      return allQuestions.take(3).toList();
+      // Menghapus baris .take(3) agar semua soal ditampilkan
+      return allQuestions;
     }
 
     return dueQuestions;
