@@ -332,25 +332,41 @@ class ESP32Service {
     }
   }
 
+  // Dalam _processTCPMessage, update bagian RFID handling:
+
   void _processTCPMessage(String message) {
     try {
       Map<String, dynamic> jsonData = json.decode(message);
       String messageType = jsonData['type'] ?? '';
 
       if (messageType == 'wifi_info') {
-        _handleWifiInfo(jsonData); 
+        _handleWifiInfo(jsonData);
         return;
       } else if (messageType == 'status') {
-        _handleStatusMessage(
-          json.encode(jsonData),
-        );
+        _handleStatusMessage(json.encode(jsonData));
         return;
       } else if (messageType == 'pong') {
         String timestamp = jsonData['original_timestamp']?.toString() ?? '';
         _handlePongMessage(timestamp);
         return;
+      } else if (messageType == 'rfid_result') {
+        // Handle RFID result - hanya ambil UID
+        String status = jsonData['status'] ?? 'unknown';
+        String uid = jsonData['uid'] ?? '';
+
+        if (status != 'unknown' && uid.isNotEmpty) {
+          // Kirim hanya UID ke handler
+          _handleRFIDMessage(
+            json.encode({'type': 'rfid_result', 'uid': uid, 'status': status}),
+          );
+        } else {
+          _updateStatus('❌ Kartu tidak dikenali');
+        }
+        return;
       }
-    } catch (e) {}
+    } catch (e) {
+      // Continue dengan parsing legacy
+    }
 
     if (message.startsWith('HELLO:')) {
       _updateStatus('👋 ${message.substring(6)}');
@@ -368,11 +384,23 @@ class ESP32Service {
         print('❌ Error parsing legacy WiFi info: $e');
       }
     } else if (message.startsWith('RFID:')) {
-      _handleRFIDMessage(message.substring(5));
+      String rfidData = message.substring(5);
+      // Extract hanya UID dari data RFID
+      String uid = _extractUIDFromString(rfidData);
+      if (uid.isNotEmpty && uid.length >= 4) {
+        _handleRFIDMessage(
+          json.encode({'type': 'rfid_result', 'uid': uid, 'status': 'known'}),
+        );
+      } else {
+        _updateStatus('❌ RFID Tidak Valid');
+      }
     } else if (message.startsWith('ERROR:')) {
       _updateStatus('❌ ${message.substring(6)}');
     } else {
-      _updateStatus('📡 Data: $message');
+      // Skip unknown messages yang tidak penting
+      if (!message.contains('DEBUG') && !message.contains('SCAN')) {
+        _updateStatus('📡 Data: $message');
+      }
     }
   }
 
@@ -418,9 +446,92 @@ class ESP32Service {
   }
 
   void _handleRFIDMessage(String rfidData) {
-    _deviceData['rfid'] = rfidData;
-    _deviceDataController.add(Map.from(_deviceData));
-    _updateStatus('🎫 RFID: $rfidData');
+    try {
+      // Parse data JSON yang diterima
+      Map<String, dynamic> rfidJson = json.decode(rfidData);
+      String messageType = rfidJson['type'] ?? '';
+
+      // Filter hanya data RFID result yang valid
+      if (messageType == 'rfid_result') {
+        String status = rfidJson['status'] ?? 'unknown';
+        String uid = rfidJson['uid'] ?? '';
+        String cardType = rfidJson['card_type'] ?? 'Unknown';
+
+        // Hanya proses jika status bukan "unknown" dan UID valid
+        if (status != 'unknown' && uid.isNotEmpty && uid.length >= 4) {
+          // SIMPAN HANYA UID SAJA
+          Map<String, dynamic> filteredData = {
+            'rfid_uid': uid, // Hanya simpan UID
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+          };
+
+          _deviceData.addAll(filteredData);
+          _deviceDataController.add(Map.from(_deviceData));
+          _updateStatus('🎫 RFID: $uid');
+        } else {
+          // Kartu tidak dikenali, hanya tampilkan status tanpa simpan ke deviceData
+          _updateStatus('❌ Kartu tidak dikenali');
+        }
+      }
+    } catch (e) {
+      // Fallback untuk format legacy - extract UID saja
+      if (rfidData.isNotEmpty && !rfidData.toLowerCase().contains('unknown')) {
+        // Coba extract UID dari string
+        String uid = _extractUIDFromString(rfidData);
+        if (uid.isNotEmpty) {
+          Map<String, dynamic> filteredData = {
+            'rfid_uid': uid, // Hanya simpan UID
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+          };
+
+          _deviceData.addAll(filteredData);
+          _deviceDataController.add(Map.from(_deviceData));
+          _updateStatus('🎫 RFID: $uid');
+        } else {
+          _updateStatus('❌ Format RFID tidak valid');
+        }
+      } else {
+        _updateStatus('❌ Kartu tidak dikenali');
+      }
+    }
+  }
+
+  String _extractUIDFromString(String rfidData) {
+    try {
+      // Jika berupa JSON string, parse dulu
+      if (rfidData.trim().startsWith('{')) {
+        Map<String, dynamic> jsonData = json.decode(rfidData);
+        return jsonData['uid']?.toString() ?? '';
+      }
+
+      // Jika mengandung "UID:" atau "uid:"
+      if (rfidData.toLowerCase().contains('uid:')) {
+        RegExp uidPattern = RegExp(
+          r'uid:?\s*([0-9A-F]+)',
+          caseSensitive: false,
+        );
+        Match? match = uidPattern.firstMatch(rfidData);
+        if (match != null) return match.group(1) ?? '';
+      }
+
+      // Jika berupa hex string (hanya karakter A-F, 0-9)
+      RegExp hexPattern = RegExp(r'^[0-9A-F]{4,}$', caseSensitive: false);
+      if (hexPattern.hasMatch(rfidData)) {
+        return rfidData.toUpperCase();
+      }
+
+      // Default return string asli (dipotong jika terlalu panjang)
+      return rfidData.length > 20 ? rfidData.substring(0, 20) : rfidData;
+    } catch (e) {
+      return rfidData;
+    }
+  }
+
+  void _clearOldRFIDData() {
+    if (_deviceData.containsKey('rfid_uid')) {
+      _deviceData.remove('rfid_uid');
+      _deviceDataController.add(Map.from(_deviceData));
+    }
   }
 
   void _handleTCPError(error) {

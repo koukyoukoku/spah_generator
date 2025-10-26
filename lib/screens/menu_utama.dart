@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:Eksplorasi/screens/quiz/quiz_main_screen.dart';
-import 'nfc_screen.dart';
+import 'play_screen.dart';
 import 'password_screen.dart';
 import 'parent_control_screen.dart';
 import 'parent_control/esp32_manager_screen.dart';
@@ -133,7 +133,7 @@ class _MenuUtamaState extends State<MenuUtama> {
     }
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => NfcScreen()),
+      MaterialPageRoute(builder: (context) => PlayScreen()),
     );
   }
 
