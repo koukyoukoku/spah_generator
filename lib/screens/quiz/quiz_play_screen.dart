@@ -138,18 +138,13 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
       return FSRSPerformance.again;
     }
 
-    // Berdasarkan waktu respons dan tingkat keyakinan
     if (responseTimeSeconds < 3) {
-      // Sangat cepat - Easy
       return FSRSPerformance.easy;
     } else if (responseTimeSeconds < 8) {
-      // Cukup cepat - Good
       return FSRSPerformance.good;
     } else if (responseTimeSeconds < 15) {
-      // Agak lambat - Hard
       return FSRSPerformance.hard;
     } else {
-      // Sangat lambat - Hard (but almost Again)
       return FSRSPerformance.hard;
     }
   }
@@ -160,24 +155,19 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
     final dueQuestions = _questions
         .where((question) => dueQuestionIds.contains(question['id']))
         .toList();
-
-    // Stabilkan pengurutan dengan menambahkan kriteria kedua
     dueQuestions.sort((a, b) {
       final masteryA = fsrsManager.getMasteryLevel(a['id']);
       final masteryB = fsrsManager.getMasteryLevel(b['id']);
 
-      // Jika mastery level sama, urutkan berdasarkan ID untuk konsistensi
       if (masteryA == masteryB) {
         return a['id'].compareTo(b['id']);
       }
       return masteryA.compareTo(masteryB);
     });
 
-    // Jika tidak ada soal yang due, kembalikan semua soal
     if (dueQuestions.isEmpty) {
       final allQuestions = List<Map<String, dynamic>>.from(_questions);
 
-      // Stabilkan pengurutan untuk semua soal juga
       allQuestions.sort((a, b) {
         final masteryA = fsrsManager.getMasteryLevel(a['id']);
         final masteryB = fsrsManager.getMasteryLevel(b['id']);
@@ -1095,10 +1085,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
       _score = 0;
       _showResult = false;
       _selectedAnswer = null;
-      // Pastikan untuk mengambil due questions yang terbaru
       _currentSessionQuestions = _getDueQuestions();
-
-      // Debug: Print jumlah soal untuk memastikan konsistensi
       print('Jumlah soal sesi baru: ${_currentSessionQuestions.length}');
     });
   }

@@ -332,8 +332,6 @@ class ESP32Service {
     }
   }
 
-  // Dalam _processTCPMessage, update bagian RFID handling:
-
   void _processTCPMessage(String message) {
     try {
       Map<String, dynamic> jsonData = json.decode(message);
@@ -350,12 +348,10 @@ class ESP32Service {
         _handlePongMessage(timestamp);
         return;
       } else if (messageType == 'rfid_result') {
-        // Handle RFID result - hanya ambil UID
         String status = jsonData['status'] ?? 'unknown';
         String uid = jsonData['uid'] ?? '';
 
         if (status != 'unknown' && uid.isNotEmpty) {
-          // Kirim hanya UID ke handler
           _handleRFIDMessage(
             json.encode({'type': 'rfid_result', 'uid': uid, 'status': status}),
           );
@@ -365,7 +361,6 @@ class ESP32Service {
         return;
       }
     } catch (e) {
-      // Continue dengan parsing legacy
     }
 
     if (message.startsWith('HELLO:')) {
@@ -385,7 +380,6 @@ class ESP32Service {
       }
     } else if (message.startsWith('RFID:')) {
       String rfidData = message.substring(5);
-      // Extract hanya UID dari data RFID
       String uid = _extractUIDFromString(rfidData);
       if (uid.isNotEmpty && uid.length >= 4) {
         _handleRFIDMessage(
@@ -397,7 +391,6 @@ class ESP32Service {
     } else if (message.startsWith('ERROR:')) {
       _updateStatus('❌ ${message.substring(6)}');
     } else {
-      // Skip unknown messages yang tidak penting
       if (!message.contains('DEBUG') && !message.contains('SCAN')) {
         _updateStatus('📡 Data: $message');
       }
@@ -447,21 +440,17 @@ class ESP32Service {
 
   void _handleRFIDMessage(String rfidData) {
     try {
-      // Parse data JSON yang diterima
       Map<String, dynamic> rfidJson = json.decode(rfidData);
       String messageType = rfidJson['type'] ?? '';
 
-      // Filter hanya data RFID result yang valid
       if (messageType == 'rfid_result') {
         String status = rfidJson['status'] ?? 'unknown';
         String uid = rfidJson['uid'] ?? '';
         String cardType = rfidJson['card_type'] ?? 'Unknown';
 
-        // Hanya proses jika status bukan "unknown" dan UID valid
         if (status != 'unknown' && uid.isNotEmpty && uid.length >= 4) {
-          // SIMPAN HANYA UID SAJA
           Map<String, dynamic> filteredData = {
-            'rfid_uid': uid, // Hanya simpan UID
+            'rfid_uid': uid,
             'timestamp': DateTime.now().millisecondsSinceEpoch,
           };
 
@@ -469,18 +458,15 @@ class ESP32Service {
           _deviceDataController.add(Map.from(_deviceData));
           _updateStatus('🎫 RFID: $uid');
         } else {
-          // Kartu tidak dikenali, hanya tampilkan status tanpa simpan ke deviceData
           _updateStatus('❌ Kartu tidak dikenali');
         }
       }
     } catch (e) {
-      // Fallback untuk format legacy - extract UID saja
       if (rfidData.isNotEmpty && !rfidData.toLowerCase().contains('unknown')) {
-        // Coba extract UID dari string
         String uid = _extractUIDFromString(rfidData);
         if (uid.isNotEmpty) {
           Map<String, dynamic> filteredData = {
-            'rfid_uid': uid, // Hanya simpan UID
+            'rfid_uid': uid,
             'timestamp': DateTime.now().millisecondsSinceEpoch,
           };
 
@@ -498,13 +484,11 @@ class ESP32Service {
 
   String _extractUIDFromString(String rfidData) {
     try {
-      // Jika berupa JSON string, parse dulu
       if (rfidData.trim().startsWith('{')) {
         Map<String, dynamic> jsonData = json.decode(rfidData);
         return jsonData['uid']?.toString() ?? '';
       }
 
-      // Jika mengandung "UID:" atau "uid:"
       if (rfidData.toLowerCase().contains('uid:')) {
         RegExp uidPattern = RegExp(
           r'uid:?\s*([0-9A-F]+)',
@@ -514,13 +498,11 @@ class ESP32Service {
         if (match != null) return match.group(1) ?? '';
       }
 
-      // Jika berupa hex string (hanya karakter A-F, 0-9)
       RegExp hexPattern = RegExp(r'^[0-9A-F]{4,}$', caseSensitive: false);
       if (hexPattern.hasMatch(rfidData)) {
         return rfidData.toUpperCase();
       }
 
-      // Default return string asli (dipotong jika terlalu panjang)
       return rfidData.length > 20 ? rfidData.substring(0, 20) : rfidData;
     } catch (e) {
       return rfidData;

@@ -61,14 +61,14 @@ class _PlayScreenState extends State<PlayScreen>
       if (mounted) {
         setState(() {
           _status = status;
-          if (!status.contains('WiFi:') && 
-              !status.contains('Starting') && 
+          if (!status.contains('WiFi:') &&
+              !status.contains('Starting') &&
               !status.contains('Scanning') &&
               !status.contains('Connecting') &&
               !status.contains('Re-scan') &&
               !status.contains('No devices') &&
               !status.contains('UDP Discovery') &&
-              !status.contains('Data') &&
+              !status.contains('Data:') &&
               !status.contains('Ping:')) {
             _displayText = _getUserFriendlyStatus(status);
           }
@@ -128,7 +128,7 @@ class _PlayScreenState extends State<PlayScreen>
           _status = "NFC siap";
           _displayText = "Tempelkan perangkat ke tag NFC";
         });
-        _startReading(); 
+        _startReading();
       } else if (availability == NFCAvailability.disabled) {
         setState(() {
           _nfcAvailable = false;
@@ -281,15 +281,21 @@ class _PlayScreenState extends State<PlayScreen>
       FlutterNfcKit.finish();
     }
 
-    Navigator.pop(context);
+    if (mounted) {
+      Navigator.pop(context);
+    }
   }
 
   @override
   void dispose() {
+    _isReading = false;
     _animationController.dispose();
-    _stopReadingAndExit();
-    _esp32DataSubscription?.cancel();
-    _esp32StatusSubscription?.cancel();
+
+    if (_useESP32Mode) {
+    } else {
+      FlutterNfcKit.finish();
+    }
+
     super.dispose();
   }
 
@@ -499,14 +505,16 @@ class _PlayScreenState extends State<PlayScreen>
                               Icon(
                                 _showSuccess
                                     ? Icons.check_circle_rounded
-                                    : ((_useESP32Mode && _esp32Service.isConnected)
+                                    : ((_useESP32Mode &&
+                                              _esp32Service.isConnected)
                                           ? Icons.wifi_rounded
                                           : (_nfcAvailable || _useESP32Mode
                                                 ? Icons.info_outline_rounded
                                                 : Icons.error_outline_rounded)),
                                 color: _showSuccess
                                     ? Color(0xFF4ECDC4)
-                                    : ((_useESP32Mode && _esp32Service.isConnected)
+                                    : ((_useESP32Mode &&
+                                              _esp32Service.isConnected)
                                           ? Color(0xFF4ECDC4)
                                           : (_nfcAvailable || _useESP32Mode
                                                 ? Color(0xFF4ECDC4)
