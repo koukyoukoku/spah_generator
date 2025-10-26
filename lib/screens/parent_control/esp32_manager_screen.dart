@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:spah_generator/services/esp32_service.dart';
-import 'package:spah_generator/components/SmoothPress.dart';
+import 'package:Eksplorasi/services/esp32_service.dart';
+import 'package:Eksplorasi/components/SmoothPress.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ESP32ManagerScreen extends StatefulWidget {
   final ESP32Service esp32Service;
 
-  const ESP32ManagerScreen({Key? key, required this.esp32Service}) : super(key: key);
+  const ESP32ManagerScreen({Key? key, required this.esp32Service})
+    : super(key: key);
 
   @override
   _ESP32ManagerScreenState createState() => _ESP32ManagerScreenState();
@@ -70,7 +71,7 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
     setState(() {
       _useESP32Mode = value;
     });
-    
+
     if (value) {
       widget.esp32Service.startDiscovery();
     } else {
@@ -148,7 +149,7 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
       widget.esp32Service.requestDeviceStatus();
     });
   }
-  
+
   void _stopPollingDeviceStatus() {
     _pollTimer?.cancel();
     _pollTimer = null;
@@ -173,7 +174,7 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
                 ),
               ),
             ),
-            
+
             Positioned(
               bottom: -50,
               left: -30,
@@ -197,7 +198,7 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
                   SizedBox(height: 20),
                   if (_useESP32Mode) _buildDiscoveryCard(),
                   SizedBox(height: 20),
-                  if (_isConnected && _deviceData.isNotEmpty) 
+                  if (_isConnected && _deviceData.isNotEmpty)
                     _buildDeviceInfoCard(),
                   SizedBox(height: 20),
                   if (_useESP32Mode) _buildWiFiConfigCard(),
@@ -337,11 +338,7 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
                 color: Colors.white.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons.nfc,
-                color: Colors.white,
-                size: 40,
-              ),
+              child: Icon(Icons.nfc, color: Colors.white, size: 40),
             ),
             SizedBox(height: 16),
             Text(
@@ -355,7 +352,7 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
             ),
             SizedBox(height: 8),
             Text(
-              'Gunakan NFC perangkat untuk eksplorasi benda',
+              'Gunakan NFC perangkat untuk Eksplorasi benda',
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.white.withOpacity(0.9),
@@ -995,7 +992,7 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
     _provisioningSubscription.cancel();
 
     _stopPollingDeviceStatus();
-    
+
     _ssidController.dispose();
     _passwordController.dispose();
     super.dispose();

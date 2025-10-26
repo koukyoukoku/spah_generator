@@ -1,4 +1,4 @@
-package com.vaziety.spah_generator
+package com.vaziety.eksplorasi
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:spah_generator/components/SmoothPress.dart';
+import 'package:Eksplorasi/components/SmoothPress.dart';
 
 class DataManagementScreen extends StatefulWidget {
   @override
@@ -16,7 +16,7 @@ class _DataManagementScreenState extends State<DataManagementScreen> {
       favoriteActivity: 'Eksplorasi Benda',
     ),
     ChildData(
-      name: 'Anak 2', 
+      name: 'Anak 2',
       progress: 60,
       lastActivity: 'Kemarin, 14:20',
       totalSessions: 8,
@@ -146,9 +146,21 @@ class _DataManagementScreenState extends State<DataManagementScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
-                                _buildStatItem('Total Anak', _childrenData.length.toString(), Icons.people_rounded),
-                                _buildStatItem('Sesi Aktif', '23', Icons.play_arrow_rounded),
-                                _buildStatItem('Rata-rata Progress', '68%', Icons.trending_up_rounded),
+                                _buildStatItem(
+                                  'Total Anak',
+                                  _childrenData.length.toString(),
+                                  Icons.people_rounded,
+                                ),
+                                _buildStatItem(
+                                  'Sesi Aktif',
+                                  '23',
+                                  Icons.play_arrow_rounded,
+                                ),
+                                _buildStatItem(
+                                  'Rata-rata Progress',
+                                  '68%',
+                                  Icons.trending_up_rounded,
+                                ),
                               ],
                             ),
                           ],
@@ -172,13 +184,18 @@ class _DataManagementScreenState extends State<DataManagementScreen> {
                                 SmoothPressButton(
                                   onPressed: _addNewChild,
                                   child: Container(
-                                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 8,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: Color(0xFFC8A2C8),
                                       borderRadius: BorderRadius.circular(12),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Color(0xFFC8A2C8).withOpacity(0.3),
+                                          color: Color(
+                                            0xFFC8A2C8,
+                                          ).withOpacity(0.3),
                                           blurRadius: 6,
                                           offset: Offset(0, 3),
                                         ),
@@ -186,7 +203,11 @@ class _DataManagementScreenState extends State<DataManagementScreen> {
                                     ),
                                     child: Row(
                                       children: [
-                                        Icon(Icons.add, size: 16, color: Colors.white),
+                                        Icon(
+                                          Icons.add,
+                                          size: 16,
+                                          color: Colors.white,
+                                        ),
                                         SizedBox(width: 6),
                                         Text(
                                           'Tambah',
@@ -204,7 +225,9 @@ class _DataManagementScreenState extends State<DataManagementScreen> {
                               ],
                             ),
                             SizedBox(height: 15),
-                            ..._childrenData.map((child) => _buildChildCard(child)).toList(),
+                            ..._childrenData
+                                .map((child) => _buildChildCard(child))
+                                .toList(),
                           ],
                         ),
 
@@ -256,7 +279,10 @@ class _DataManagementScreenState extends State<DataManagementScreen> {
     );
   }
 
-  Widget _buildDataCard({required String title, required List<Widget> children}) {
+  Widget _buildDataCard({
+    required String title,
+    required List<Widget> children,
+  }) {
     return Container(
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -269,10 +295,7 @@ class _DataManagementScreenState extends State<DataManagementScreen> {
             offset: Offset(0, 5),
           ),
         ],
-        border: Border.all(
-          color: Color(0xFFC8A2C8).withOpacity(0.3),
-          width: 2,
-        ),
+        border: Border.all(color: Color(0xFFC8A2C8).withOpacity(0.3), width: 2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -306,11 +329,7 @@ class _DataManagementScreenState extends State<DataManagementScreen> {
               width: 2,
             ),
           ),
-          child: Icon(
-            icon,
-            color: Color(0xFFC8A2C8),
-            size: 28,
-          ),
+          child: Icon(icon, color: Color(0xFFC8A2C8), size: 28),
         ),
         SizedBox(height: 8),
         Text(
@@ -343,11 +362,7 @@ class _DataManagementScreenState extends State<DataManagementScreen> {
         borderRadius: BorderRadius.circular(15),
         border: Border.all(color: Color(0xFFC8A2C8).withOpacity(0.2)),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          ),
+          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
         ],
       ),
       child: Row(
@@ -429,9 +444,15 @@ class _DataManagementScreenState extends State<DataManagementScreen> {
     );
   }
 
-  Widget _buildDataOption(String title, String subtitle, IconData icon, VoidCallback onTap, {bool isDanger = false}) {
+  Widget _buildDataOption(
+    String title,
+    String subtitle,
+    IconData icon,
+    VoidCallback onTap, {
+    bool isDanger = false,
+  }) {
     Color color = isDanger ? Color(0xFFFE6D73) : Color(0xFFC8A2C8);
-    
+
     return SmoothPressButton(
       onPressed: onTap,
       child: Container(
@@ -456,16 +477,9 @@ class _DataManagementScreenState extends State<DataManagementScreen> {
               decoration: BoxDecoration(
                 color: color.withOpacity(0.2),
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: color.withOpacity(0.3),
-                  width: 2,
-                ),
+                border: Border.all(color: color.withOpacity(0.3), width: 2),
               ),
-              child: Icon(
-                icon,
-                color: color,
-                size: 22,
-              ),
+              child: Icon(icon, color: color, size: 22),
             ),
             SizedBox(width: 16),
             Expanded(
@@ -493,11 +507,7 @@ class _DataManagementScreenState extends State<DataManagementScreen> {
                 ],
               ),
             ),
-            Icon(
-              Icons.arrow_forward_ios_rounded,
-              size: 18,
-              color: color,
-            ),
+            Icon(Icons.arrow_forward_ios_rounded, size: 18, color: color),
           ],
         ),
       ),
@@ -526,20 +536,13 @@ class _DataManagementScreenState extends State<DataManagementScreen> {
       builder: (context) => AlertDialog(
         title: Text(
           'Hapus Semua Data?',
-          style: TextStyle(
-            fontFamily: 'ComicNeue',
-            color: Color(0xFF2D5A7E),
-          ),
+          style: TextStyle(fontFamily: 'ComicNeue', color: Color(0xFF2D5A7E)),
         ),
         content: Text(
           'Tindakan ini akan menghapus semua data progres dan tidak dapat dipulihkan.',
-          style: TextStyle(
-            fontFamily: 'ComicNeue',
-          ),
+          style: TextStyle(fontFamily: 'ComicNeue'),
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

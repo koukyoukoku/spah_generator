@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "516525445283",
+    "project_id": "spah-e2a0b",
+    "storage_bucket": "spah-e2a0b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:516525445283:android:e82ed923f4c7dee2d7af16",
+        "android_client_info": {
+          "package_name": "com.vaziety.eksplorasi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBYCMUyGtfbK_vIM_0wAkkgvadn-rjOdf8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

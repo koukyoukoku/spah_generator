@@ -4,31 +4,32 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
 import 'package:ndef/ndef.dart' as ndef;
-import 'package:spah_generator/components/SmoothPress.dart';
+import 'package:Eksplorasi/components/SmoothPress.dart';
 
 class NfcScreen extends StatefulWidget {
   @override
   _NfcScreenState createState() => _NfcScreenState();
 }
 
-class _NfcScreenState extends State<NfcScreen> with SingleTickerProviderStateMixin {
+class _NfcScreenState extends State<NfcScreen>
+    with SingleTickerProviderStateMixin {
   String _status = "Menyiapkan NFC...";
   bool _isReading = false;
   String _nfcData = "";
   bool _nfcAvailable = false;
   bool _showSuccess = false;
-  
+
   late AnimationController _animationController;
 
   @override
   void initState() {
     super.initState();
-    
+
     _animationController = AnimationController(
       duration: Duration(seconds: 1),
       vsync: this,
     );
-    
+
     _checkNfcAvailability();
   }
 
@@ -51,12 +52,14 @@ class _NfcScreenState extends State<NfcScreen> with SingleTickerProviderStateMix
       } else if (availability == NFCAvailability.disabled) {
         setState(() {
           _nfcAvailable = false;
-          _status = "NFC dimatikan\n\nAktifkan NFC di pengaturan untuk menggunakan fitur ini";
+          _status =
+              "NFC dimatikan\n\nAktifkan NFC di pengaturan untuk menggunakan fitur ini";
         });
       } else if (availability == NFCAvailability.not_supported) {
         setState(() {
           _nfcAvailable = false;
-          _status = "Perangkat tidak mendukung NFC\n\nFitur ini hanya tersedia di perangkat dengan NFC";
+          _status =
+              "Perangkat tidak mendukung NFC\n\nFitur ini hanya tersedia di perangkat dengan NFC";
         });
       }
     } catch (e) {
@@ -72,7 +75,7 @@ class _NfcScreenState extends State<NfcScreen> with SingleTickerProviderStateMix
       _status = "Tempelkan perangkat ke benda yang memiliki tag NFC";
       _showSuccess = false;
     });
-    
+
     _animationController.repeat();
 
     _readNfcContinuously();
@@ -91,7 +94,7 @@ class _NfcScreenState extends State<NfcScreen> with SingleTickerProviderStateMix
           _status = "Benda dikenali!";
           _showSuccess = true;
         });
-        
+
         _animationController.stop();
 
         await Future.delayed(Duration(seconds: 2));
@@ -101,7 +104,7 @@ class _NfcScreenState extends State<NfcScreen> with SingleTickerProviderStateMix
             _status = "Tempelkan ke benda lain...";
             _showSuccess = false;
           });
-          
+
           _animationController.repeat();
         }
       } catch (e) {
@@ -122,7 +125,7 @@ class _NfcScreenState extends State<NfcScreen> with SingleTickerProviderStateMix
       _status = "Membaca dihentikan";
       _showSuccess = false;
     });
-    
+
     _animationController.stop();
     FlutterNfcKit.finish();
   }
@@ -159,7 +162,7 @@ class _NfcScreenState extends State<NfcScreen> with SingleTickerProviderStateMix
                 ),
               ),
             ),
-            
+
             Positioned(
               top: 16,
               left: 16,
@@ -188,7 +191,7 @@ class _NfcScreenState extends State<NfcScreen> with SingleTickerProviderStateMix
                 ),
               ),
             ),
-            
+
             Column(
               children: [
                 SizedBox(height: 40),
@@ -209,17 +212,21 @@ class _NfcScreenState extends State<NfcScreen> with SingleTickerProviderStateMix
                                   width: 200,
                                   height: 200,
                                   child: CircularProgressIndicator(
-                                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4ECDC4)),
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Color(0xFF4ECDC4),
+                                    ),
                                     strokeWidth: 4,
                                     backgroundColor: Colors.transparent,
                                   ),
                                 ),
-                              
+
                               Container(
                                 width: 180,
                                 height: 180,
                                 decoration: BoxDecoration(
-                                  color: _showSuccess ? Color(0xFF4ECDC4).withOpacity(0.2) : Colors.white,
+                                  color: _showSuccess
+                                      ? Color(0xFF4ECDC4).withOpacity(0.2)
+                                      : Colors.white,
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
@@ -229,14 +236,16 @@ class _NfcScreenState extends State<NfcScreen> with SingleTickerProviderStateMix
                                     ),
                                   ],
                                   border: Border.all(
-                                    color: _showSuccess ? Color(0xFF4ECDC4) : Colors.transparent,
+                                    color: _showSuccess
+                                        ? Color(0xFF4ECDC4)
+                                        : Colors.transparent,
                                     width: _showSuccess ? 6 : 0,
                                   ),
                                 ),
                                 child: Icon(
-                                  _showSuccess 
-                                    ? Icons.check_circle_rounded
-                                    : Icons.nfc_rounded,
+                                  _showSuccess
+                                      ? Icons.check_circle_rounded
+                                      : Icons.nfc_rounded,
                                   size: 80,
                                   color: Color(0xFF4ECDC4),
                                 ),
@@ -246,11 +255,13 @@ class _NfcScreenState extends State<NfcScreen> with SingleTickerProviderStateMix
                         ),
 
                         SizedBox(height: 40),
-                        
+
                         Text(
-                          _isReading 
-                            ? (_showSuccess ? "BERHASIL!" : "Eksplorasi Benda")
-                            : "Eksplorasi Benda",
+                          _isReading
+                              ? (_showSuccess
+                                    ? "BERHASIL!"
+                                    : "Eksplorasi Benda")
+                              : "Eksplorasi Benda",
                           style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.w700,
@@ -261,18 +272,18 @@ class _NfcScreenState extends State<NfcScreen> with SingleTickerProviderStateMix
                         ),
 
                         SizedBox(height: 15),
-                        
+
                         Container(
                           padding: EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            color: _showSuccess 
-                              ? Color(0xFF4ECDC4).withOpacity(0.1)
-                              : Colors.white,
+                            color: _showSuccess
+                                ? Color(0xFF4ECDC4).withOpacity(0.1)
+                                : Colors.white,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: _showSuccess 
-                                ? Color(0xFF4ECDC4).withOpacity(0.3)
-                                : Color(0xFF4ECDC4).withOpacity(0.3),
+                              color: _showSuccess
+                                  ? Color(0xFF4ECDC4).withOpacity(0.3)
+                                  : Color(0xFF4ECDC4).withOpacity(0.3),
                               width: 2,
                             ),
                             boxShadow: [
@@ -286,16 +297,16 @@ class _NfcScreenState extends State<NfcScreen> with SingleTickerProviderStateMix
                           child: Column(
                             children: [
                               Icon(
-                                _showSuccess 
-                                  ? Icons.check_circle_rounded
-                                  : (_nfcAvailable 
-                                      ? Icons.info_outline_rounded 
-                                      : Icons.error_outline_rounded),
-                                color: _showSuccess 
-                                  ? Color(0xFF4ECDC4)
-                                  : (_nfcAvailable 
-                                      ? Color(0xFF4ECDC4) 
-                                      : Color(0xFFFE6D73)),
+                                _showSuccess
+                                    ? Icons.check_circle_rounded
+                                    : (_nfcAvailable
+                                          ? Icons.info_outline_rounded
+                                          : Icons.error_outline_rounded),
+                                color: _showSuccess
+                                    ? Color(0xFF4ECDC4)
+                                    : (_nfcAvailable
+                                          ? Color(0xFF4ECDC4)
+                                          : Color(0xFFFE6D73)),
                                 size: 40,
                               ),
                               SizedBox(height: 15),
@@ -326,7 +337,7 @@ class _NfcScreenState extends State<NfcScreen> with SingleTickerProviderStateMix
                         ),
 
                         SizedBox(height: 30),
-                        
+
                         if (_nfcAvailable && _isReading && !_showSuccess)
                           Container(
                             padding: EdgeInsets.all(16),
@@ -361,7 +372,7 @@ class _NfcScreenState extends State<NfcScreen> with SingleTickerProviderStateMix
                     ),
                   ),
                 ),
-                
+
                 Padding(
                   padding: EdgeInsets.all(25),
                   child: SmoothPressButton(
@@ -386,10 +397,14 @@ class _NfcScreenState extends State<NfcScreen> with SingleTickerProviderStateMix
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.stop_rounded, color: Colors.white, size: 28),
+                          Icon(
+                            Icons.stop_rounded,
+                            color: Colors.white,
+                            size: 28,
+                          ),
                           SizedBox(width: 12),
                           Text(
-                            "BERHENTI EKSPLORASI",
+                            "BERHENTI Eksplorasi",
                             style: TextStyle(
                               fontSize: 18,
                               color: Colors.white,

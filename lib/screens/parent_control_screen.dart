@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:spah_generator/screens/parent_control/esp32_manager_screen.dart';
-import 'package:spah_generator/models/parent_menu_item.dart';
-import 'package:spah_generator/components/SmoothPress.dart';
-import 'package:spah_generator/services/esp32_service.dart';
+import 'package:Eksplorasi/screens/parent_control/esp32_manager_screen.dart';
+import 'package:Eksplorasi/models/parent_menu_item.dart';
+import 'package:Eksplorasi/components/SmoothPress.dart';
+import 'package:Eksplorasi/services/esp32_service.dart';
 import 'parent_control/change_pin_screen.dart';
 import 'parent_control/sync_data_screen.dart';
 import 'parent_control/usage_guide_screen.dart';
@@ -100,10 +100,8 @@ class ParentControlScreen extends StatelessWidget {
                         vertical: 10,
                       ),
                       child: Column(
-                        mainAxisAlignment:
-                            MainAxisAlignment.center,
-                        crossAxisAlignment:
-                            CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Container(
                             width: 120,
@@ -153,9 +151,7 @@ class ParentControlScreen extends StatelessWidget {
                           ),
                           SizedBox(height: 30),
                           Container(
-                            constraints: BoxConstraints(
-                              maxWidth: 600,
-                            ),
+                            constraints: BoxConstraints(maxWidth: 600),
                             child: GridView.builder(
                               shrinkWrap: true,
                               physics: NeverScrollableScrollPhysics(),
@@ -178,9 +174,7 @@ class ParentControlScreen extends StatelessWidget {
 
                           SizedBox(height: 30),
                           Container(
-                            constraints: BoxConstraints(
-                              maxWidth: 600,
-                            ),
+                            constraints: BoxConstraints(maxWidth: 600),
                             width: double.infinity,
                             padding: EdgeInsets.all(24),
                             decoration: BoxDecoration(
@@ -225,7 +219,12 @@ class ParentControlScreen extends StatelessWidget {
                                     vertical: 8,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Color.fromARGB(255, 255, 185, 185).withOpacity(0.1),
+                                    color: Color.fromARGB(
+                                      255,
+                                      255,
+                                      185,
+                                      185,
+                                    ).withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:spah_generator/components/SmoothPress.dart';
-import 'package:spah_generator/screens/quiz/quiz_play_screen.dart';
+import 'package:Eksplorasi/components/SmoothPress.dart';
+import 'package:Eksplorasi/screens/quiz/quiz_play_screen.dart';
 
 class QuizMainScreen extends StatefulWidget {
   @override

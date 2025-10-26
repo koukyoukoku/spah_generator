@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:spah_generator/components/SmoothPress.dart';
+import 'package:Eksplorasi/components/SmoothPress.dart';
 
 class AppSettingsScreen extends StatefulWidget {
   @override
@@ -213,7 +213,10 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                           title: 'Bahasa',
                           children: [
                             Container(
-                              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(12),
@@ -232,7 +235,10 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                               child: DropdownButton<String>(
                                 value: _selectedLanguage,
                                 isExpanded: true,
-                                icon: Icon(Icons.arrow_drop_down_rounded, color: Color(0xFFA5D8FF)),
+                                icon: Icon(
+                                  Icons.arrow_drop_down_rounded,
+                                  color: Color(0xFFA5D8FF),
+                                ),
                                 underline: SizedBox(),
                                 style: TextStyle(
                                   fontSize: 16,
@@ -244,12 +250,14 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                                     _selectedLanguage = newValue!;
                                   });
                                 },
-                                items: _languages.map<DropdownMenuItem<String>>((String value) {
-                                  return DropdownMenuItem<String>(
-                                    value: value,
-                                    child: Text(value),
-                                  );
-                                }).toList(),
+                                items: _languages.map<DropdownMenuItem<String>>(
+                                  (String value) {
+                                    return DropdownMenuItem<String>(
+                                      value: value,
+                                      child: Text(value),
+                                    );
+                                  },
+                                ).toList(),
                               ),
                             ),
                           ],
@@ -303,7 +311,10 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
     );
   }
 
-  Widget _buildSettingsCard({required String title, required List<Widget> children}) {
+  Widget _buildSettingsCard({
+    required String title,
+    required List<Widget> children,
+  }) {
     return Container(
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -316,10 +327,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
             offset: Offset(0, 5),
           ),
         ],
-        border: Border.all(
-          color: Color(0xFFA5D8FF).withOpacity(0.3),
-          width: 2,
-        ),
+        border: Border.all(color: Color(0xFFA5D8FF).withOpacity(0.3), width: 2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -340,7 +348,13 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
     );
   }
 
-  Widget _buildSettingSwitch(String title, String subtitle, bool value, Function(bool) onChanged, IconData icon) {
+  Widget _buildSettingSwitch(
+    String title,
+    String subtitle,
+    bool value,
+    Function(bool) onChanged,
+    IconData icon,
+  ) {
     return Row(
       children: [
         Container(
@@ -350,11 +364,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
             color: Color(0xFFA5D8FF).withOpacity(0.2),
             shape: BoxShape.circle,
           ),
-          child: Icon(
-            icon,
-            color: Color(0xFFA5D8FF),
-            size: 24,
-          ),
+          child: Icon(icon, color: Color(0xFFA5D8FF), size: 24),
         ),
         SizedBox(width: 16),
         Expanded(
@@ -400,7 +410,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
       _volumeLevel = 0.8;
       _selectedLanguage = 'Indonesia';
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -412,9 +422,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
         ),
         backgroundColor: Color(0xFF4ECDC4),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }

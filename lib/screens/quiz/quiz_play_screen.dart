@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:spah_generator/components/SmoothPress.dart';
+import 'package:Eksplorasi/components/SmoothPress.dart';
 import '../../utils/fsrs.dart';
 
 class QuizPlayScreen extends StatefulWidget {
@@ -95,8 +95,27 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
   @override
   void initState() {
     super.initState();
+    _loadFSRSData();
     _initializeFSRS();
     _currentSessionQuestions = _getDueQuestions();
+  }
+
+  void _loadFSRSData() async {
+    // Implement loading from shared preferences atau local database
+    // Contoh:
+    // final prefs = await SharedPreferences.getInstance();
+    // final fsrsData = prefs.getString('fsrs_data');
+    // if (fsrsData != null) {
+    //   fsrsManager = FSRSCardManager.fromMap(json.decode(fsrsData));
+    // } else {
+    //   _initializeFSRS();
+    // }
+  }
+
+  void _saveFSRSData() async {
+    // Implement saving to shared preferences atau local database
+    // final prefs = await SharedPreferences.getInstance();
+    // await prefs.setString('fsrs_data', json.encode(fsrsManager.toMap()));
   }
 
   void _initializeFSRS() {
@@ -119,11 +138,18 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
       return FSRSPerformance.again;
     }
 
+    // Berdasarkan waktu respons dan tingkat keyakinan
     if (responseTimeSeconds < 3) {
+      // Sangat cepat - Easy
       return FSRSPerformance.easy;
     } else if (responseTimeSeconds < 8) {
+      // Cukup cepat - Good
       return FSRSPerformance.good;
+    } else if (responseTimeSeconds < 15) {
+      // Agak lambat - Hard
+      return FSRSPerformance.hard;
     } else {
+      // Sangat lambat - Hard (but almost Again)
       return FSRSPerformance.hard;
     }
   }
@@ -135,22 +161,33 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
         .where((question) => dueQuestionIds.contains(question['id']))
         .toList();
 
+    // Stabilkan pengurutan dengan menambahkan kriteria kedua
     dueQuestions.sort((a, b) {
       final masteryA = fsrsManager.getMasteryLevel(a['id']);
       final masteryB = fsrsManager.getMasteryLevel(b['id']);
+
+      // Jika mastery level sama, urutkan berdasarkan ID untuk konsistensi
+      if (masteryA == masteryB) {
+        return a['id'].compareTo(b['id']);
+      }
       return masteryA.compareTo(masteryB);
     });
 
     // Jika tidak ada soal yang due, kembalikan semua soal
     if (dueQuestions.isEmpty) {
       final allQuestions = List<Map<String, dynamic>>.from(_questions);
+
+      // Stabilkan pengurutan untuk semua soal juga
       allQuestions.sort((a, b) {
         final masteryA = fsrsManager.getMasteryLevel(a['id']);
         final masteryB = fsrsManager.getMasteryLevel(b['id']);
+
+        if (masteryA == masteryB) {
+          return a['id'].compareTo(b['id']);
+        }
         return masteryA.compareTo(masteryB);
       });
 
-      // Menghapus baris .take(3) agar semua soal ditampilkan
       return allQuestions;
     }
 
@@ -1011,7 +1048,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
   ) {
     bool isCorrect = selectedAnswer == correctAnswer;
 
-    int responseTimeSeconds = 5; 
+    int responseTimeSeconds = 5;
     int attempts = 1;
 
     FSRSPerformance performance = _getPerformanceRating(
@@ -1058,7 +1095,11 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
       _score = 0;
       _showResult = false;
       _selectedAnswer = null;
+      // Pastikan untuk mengambil due questions yang terbaru
       _currentSessionQuestions = _getDueQuestions();
+
+      // Debug: Print jumlah soal untuk memastikan konsistensi
+      print('Jumlah soal sesi baru: ${_currentSessionQuestions.length}');
     });
   }
 

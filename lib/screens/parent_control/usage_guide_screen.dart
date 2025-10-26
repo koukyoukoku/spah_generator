@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:spah_generator/components/SmoothPress.dart';
+import 'package:Eksplorasi/components/SmoothPress.dart';
 
 class UsageGuideScreen extends StatefulWidget {
   @override
@@ -10,7 +10,7 @@ class _UsageGuideScreenState extends State<UsageGuideScreen> {
   final List<GuideItem> _guideItems = [
     GuideItem(
       title: 'Cara Menggunakan NFC',
-      description: 'Tutorial penggunaan fitur NFC untuk eksplorasi benda',
+      description: 'Tutorial penggunaan fitur NFC untuk Eksplorasi benda',
       icon: Icons.nfc_rounded,
       color: Color(0xFF4ECDC4),
     ),
@@ -274,7 +274,7 @@ class _UsageGuideScreenState extends State<UsageGuideScreen> {
   String _getGuideContent(String title) {
     switch (title) {
       case 'Cara Menggunakan NFC':
-        return '1. Tekan tombol "MULAI" di menu utama\n2. Tempelkan perangkat ke benda yang memiliki tag NFC\n3. Aplikasi akan otomatis mendeteksi dan memberikan feedback\n4. Anak dapat mengeksplorasi berbagai benda secara bergantian';
+        return '1. Tekan tombol "MULAI" di menu utama\n2. Tempelkan perangkat ke benda yang memiliki tag NFC\n3. Aplikasi akan otomatis mendeteksi dan memberikan feedback\n4. Anak dapat mengEksplorasi berbagai benda secara bergantian';
       case 'Fitur Kuis':
         return '1. Pilih menu "KUIS" di halaman utama\n2. Jawab pertanyaan yang muncul dengan menekan pilihan jawaban\n3. Dapatkan feedback langsung untuk setiap jawaban\n4. Lihat progres belajar anak di bagian laporan';
       case 'Pengaturan Orang Tua':

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:spah_generator/components/SmoothPress.dart';
+import 'package:Eksplorasi/components/SmoothPress.dart';
+import '../../services/firebase.dart';
+import '../../services/local_storage.dart';
 
 class SyncDataScreen extends StatefulWidget {
   @override
@@ -9,17 +11,98 @@ class SyncDataScreen extends StatefulWidget {
 class _SyncDataScreenState extends State<SyncDataScreen> {
   bool _isSyncing = false;
   bool _isSynced = false;
+  String _lastSyncTime = '';
+  final FirebaseRealtimeDB _firebaseDB = FirebaseRealtimeDB();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSyncStatus();
+  }
+
+  void _loadSyncStatus() async {
+    try {
+      bool synced = await LocalStorage.getSyncStatus();
+      DateTime? lastSync = await LocalStorage.getLastSyncTime();
+      
+      setState(() {
+        _isSynced = synced;
+        if (lastSync != null) {
+          _lastSyncTime = lastSync.toString().substring(0, 16);
+        }
+      });
+    } catch (e) {
+      print('Error loading sync status: $e');
+    }
+  }
 
   void _startSync() async {
     setState(() {
       _isSyncing = true;
     });
-    await Future.delayed(Duration(seconds: 2));
 
-    setState(() {
-      _isSyncing = false;
-      _isSynced = true;
-    });
+    try {
+      // Contoh data yang akan disinkronisasi
+      Map<String, dynamic> sampleData = {
+        'child_progress': {
+          'last_updated': DateTime.now().toIso8601String(),
+          'milestones': ['Berjalan', 'Bicara', 'Membaca'],
+          'scores': {'motorik': 85, 'kognitif': 90, 'sosial': 78}
+        },
+        'sync_info': {
+          'device_id': 'mobile_app',
+          'sync_timestamp': DateTime.now().millisecondsSinceEpoch,
+          'app_version': '1.0.0'
+        }
+      };
+
+      // Simpan data ke Firebase
+      await _firebaseDB.saveData('child_progress/${DateTime.now().millisecondsSinceEpoch}', sampleData);
+
+      // Simpan status sync di local storage
+      await LocalStorage.setSyncStatus(true);
+      await LocalStorage.saveLastSyncTime(DateTime.now());
+
+      setState(() {
+        _isSyncing = false;
+        _isSynced = true;
+        _lastSyncTime = DateTime.now().toString().substring(0, 16);
+      });
+
+    } catch (e) {
+      setState(() {
+        _isSyncing = false;
+      });
+      _showErrorDialog('Gagal menyinkronisasi data: $e');
+    }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Error', style: TextStyle(fontFamily: 'ComicNeue')),
+        content: Text(message, style: TextStyle(fontFamily: 'ComicNeue')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text('OK', style: TextStyle(fontFamily: 'ComicNeue')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _resetSync() async {
+    try {
+      await LocalStorage.setSyncStatus(false);
+      setState(() {
+        _isSynced = false;
+        _lastSyncTime = '';
+      });
+    } catch (e) {
+      _showErrorDialog('Gagal reset status: $e');
+    }
   }
 
   @override
@@ -41,7 +124,6 @@ class _SyncDataScreenState extends State<SyncDataScreen> {
                 ),
               ),
             ),
-
             Positioned(
               bottom: -80,
               left: -40,
@@ -54,6 +136,7 @@ class _SyncDataScreenState extends State<SyncDataScreen> {
                 ),
               ),
             ),
+
             Positioned(
               top: 16,
               left: 16,
@@ -79,6 +162,7 @@ class _SyncDataScreenState extends State<SyncDataScreen> {
                 ),
               ),
             ),
+
             Column(
               children: [
                 SizedBox(height: 40),
@@ -125,7 +209,6 @@ class _SyncDataScreenState extends State<SyncDataScreen> {
                         ),
 
                         SizedBox(height: 8),
-
                         Text(
                           'Sync data progres anak ke cloud',
                           style: TextStyle(
@@ -137,6 +220,7 @@ class _SyncDataScreenState extends State<SyncDataScreen> {
                         ),
 
                         SizedBox(height: 40),
+                        
                         Container(
                           padding: EdgeInsets.all(25),
                           decoration: BoxDecoration(
@@ -200,13 +284,17 @@ class _SyncDataScreenState extends State<SyncDataScreen> {
                                 SizedBox(height: 15),
                                 Container(
                                   padding: EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 8),
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Color(0xFF4ECDC4).withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Text(
-                                    'Terakhir sync: ${DateTime.now().toString().substring(0, 16)}',
+                                    _lastSyncTime.isNotEmpty
+                                        ? 'Terakhir sync: $_lastSyncTime'
+                                        : 'Belum pernah sync',
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: Color(0xFF2D5A7E),
@@ -280,11 +368,7 @@ class _SyncDataScreenState extends State<SyncDataScreen> {
 
                         if (_isSynced)
                           SmoothPressButton(
-                            onPressed: () {
-                              setState(() {
-                                _isSynced = false;
-                              });
-                            },
+                            onPressed: _resetSync,
                             child: Container(
                               width: double.infinity,
                               padding: EdgeInsets.symmetric(vertical: 16),

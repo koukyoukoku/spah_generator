@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:spah_generator/components/SmoothPress.dart';
-import 'package:spah_generator/utils/parent_control.dart';
+import 'package:Eksplorasi/components/SmoothPress.dart';
+import 'package:Eksplorasi/utils/parent_control.dart';
 
 class PasswordScreen extends StatefulWidget {
   final VoidCallback onSuccess;

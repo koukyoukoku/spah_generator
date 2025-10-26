@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:spah_generator/screens/parent_control/change_pin_screen.dart';
+import 'package:Eksplorasi/screens/parent_control/change_pin_screen.dart';
 
 class ParentMenuItem {
   final String title;

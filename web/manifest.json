@@ -1,6 +1,6 @@
 {
-    "name": "spah_generator",
-    "short_name": "spah_generator",
+    "name": "eksplorasi",
+    "short_name": "eksplorasi",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#hexcode",

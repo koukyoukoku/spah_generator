@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:spah_generator/components/SmoothPress.dart';
-import 'package:spah_generator/components/pin_box.dart';
-import 'package:spah_generator/components/success_checkmark.dart';
+import 'package:Eksplorasi/components/SmoothPress.dart';
+import 'package:Eksplorasi/components/pin_box.dart';
+import 'package:Eksplorasi/components/success_checkmark.dart';
 
 class ChangePinScreen extends StatefulWidget {
   @override
@@ -51,7 +51,7 @@ class _ChangePinScreenState extends State<ChangePinScreen> {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('parent_password', _newPin);
-    
+
     setState(() {
       _isSuccess = true;
       _message = '';
@@ -180,11 +180,11 @@ class _ChangePinScreenState extends State<ChangePinScreen> {
                         SizedBox(height: 8),
 
                         Text(
-                          _isSuccess 
-                            ? 'PIN berhasil diubah!'
-                            : (_showConfirm 
-                                ? 'Konfirmasi PIN baru Anda'
-                                : 'Buat PIN baru 4 digit untuk kontrol orang tua'),
+                          _isSuccess
+                              ? 'PIN berhasil diubah!'
+                              : (_showConfirm
+                                    ? 'Konfirmasi PIN baru Anda'
+                                    : 'Buat PIN baru 4 digit untuk kontrol orang tua'),
                           style: TextStyle(
                             fontSize: 16,
                             color: Color(0xFF666666),
@@ -195,9 +195,9 @@ class _ChangePinScreenState extends State<ChangePinScreen> {
 
                         SizedBox(height: 40),
 
-                        if (_isSuccess) 
+                        if (_isSuccess)
                           _buildSuccessWidget()
-                        else 
+                        else
                           _buildFormWidget(),
                       ],
                     ),
@@ -226,13 +226,9 @@ class _ChangePinScreenState extends State<ChangePinScreen> {
                   height: 50,
                   margin: EdgeInsets.symmetric(horizontal: 8),
                   decoration: BoxDecoration(
-                    color: hasValue
-                        ? Color(0xFF4ECDC4)
-                        : Colors.white,
+                    color: hasValue ? Color(0xFF4ECDC4) : Colors.white,
                     border: Border.all(
-                      color: hasValue
-                          ? Color(0xFF2AA8A0)
-                          : Color(0xFFCCCCCC),
+                      color: hasValue ? Color(0xFF2AA8A0) : Color(0xFFCCCCCC),
                       width: 2,
                     ),
                     borderRadius: BorderRadius.circular(15),
@@ -270,13 +266,9 @@ class _ChangePinScreenState extends State<ChangePinScreen> {
                   height: 50,
                   margin: EdgeInsets.symmetric(horizontal: 8),
                   decoration: BoxDecoration(
-                    color: hasValue
-                        ? Color(0xFF4ECDC4)
-                        : Colors.white,
+                    color: hasValue ? Color(0xFF4ECDC4) : Colors.white,
                     border: Border.all(
-                      color: hasValue
-                          ? Color(0xFF2AA8A0)
-                          : Color(0xFFCCCCCC),
+                      color: hasValue ? Color(0xFF2AA8A0) : Color(0xFFCCCCCC),
                       width: 2,
                     ),
                     borderRadius: BorderRadius.circular(15),
@@ -307,10 +299,7 @@ class _ChangePinScreenState extends State<ChangePinScreen> {
         SizedBox(height: 20),
         if (_message.isNotEmpty)
           Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 12,
-            ),
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             decoration: BoxDecoration(
               color: Color(0xFFFFE6E8),
               borderRadius: BorderRadius.circular(12),
@@ -319,11 +308,7 @@ class _ChangePinScreenState extends State<ChangePinScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.error_outline,
-                  color: Color(0xFFFF6B6B),
-                  size: 18,
-                ),
+                Icon(Icons.error_outline, color: Color(0xFFFF6B6B), size: 18),
                 SizedBox(width: 8),
                 Text(
                   _message,
@@ -348,10 +333,7 @@ class _ChangePinScreenState extends State<ChangePinScreen> {
             keyboardType: TextInputType.number,
             maxLength: 4,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 1,
-              color: Colors.transparent,
-            ),
+            style: TextStyle(fontSize: 1, color: Colors.transparent),
             decoration: InputDecoration(
               counterText: "",
               border: InputBorder.none,
@@ -398,10 +380,7 @@ class _ChangePinScreenState extends State<ChangePinScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Color(0xFF4ECDC4),
-                  width: 2,
-                ),
+                border: Border.all(color: Color(0xFF4ECDC4), width: 2),
               ),
               child: Text(
                 'Ulangi PIN',

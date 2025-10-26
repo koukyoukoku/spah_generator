@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:spah_generator/screens/quiz/quiz_main_screen.dart';
+import 'package:Eksplorasi/screens/quiz/quiz_main_screen.dart';
 import 'nfc_screen.dart';
 import 'password_screen.dart';
 import 'parent_control_screen.dart';
 import 'parent_control/esp32_manager_screen.dart';
-import 'package:spah_generator/services/esp32_service.dart';
-import 'package:spah_generator/components/SmoothPress.dart';
+import 'package:Eksplorasi/services/esp32_service.dart';
+import 'package:Eksplorasi/components/SmoothPress.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -66,13 +66,13 @@ class _MenuUtamaState extends State<MenuUtama> {
   Future<void> _loadESP32Preference() async {
     final prefs = await SharedPreferences.getInstance();
     bool useESP32Mode = prefs.getBool('use_esp32_mode') ?? false;
-    
+
     if (mounted) {
       setState(() {
         _useESP32Mode = useESP32Mode;
       });
     }
-    
+
     if (_useESP32Mode && !_isConnectedToESP32) {
       widget.esp32Service.startDiscovery();
     }
@@ -105,7 +105,7 @@ class _MenuUtamaState extends State<MenuUtama> {
     } catch (e, st) {
       debugPrint('Gagal mainkan audio: $e\n$st');
     }
-    
+
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -113,7 +113,7 @@ class _MenuUtamaState extends State<MenuUtama> {
             ESP32ManagerScreen(esp32Service: widget.esp32Service),
       ),
     );
-    
+
     if (mounted && result == true) {
       await _loadESP32Preference();
     }
@@ -217,7 +217,9 @@ class _MenuUtamaState extends State<MenuUtama> {
                               height: 12,
                               decoration: BoxDecoration(
                                 color: _useESP32Mode
-                                    ? (_isConnectedToESP32 ? Colors.green : Colors.orange)
+                                    ? (_isConnectedToESP32
+                                          ? Colors.green
+                                          : Colors.orange)
                                     : Colors.blue,
                                 shape: BoxShape.circle,
                               ),
@@ -225,7 +227,9 @@ class _MenuUtamaState extends State<MenuUtama> {
                             SizedBox(width: 8),
                             Text(
                               _useESP32Mode
-                                  ? (_isConnectedToESP32 ? "Terhubung ESP32" : "Mencari ESP32...")
+                                  ? (_isConnectedToESP32
+                                        ? "Terhubung ESP32"
+                                        : "Mencari ESP32...")
                                   : "Mode NFC Aktif",
                               style: TextStyle(
                                 fontSize: 16,

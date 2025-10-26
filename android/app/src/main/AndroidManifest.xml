@@ -4,7 +4,7 @@
     android:name="android.hardware.nfc"
     android:required="true" />
     <application
-        android:label="spah generator"
+        android:label="Eksplorasi"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon"
         android:enableOnBackInvokedCallback="true">
