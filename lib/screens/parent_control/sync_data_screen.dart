@@ -42,7 +42,6 @@ class _SyncDataScreenState extends State<SyncDataScreen> {
     });
 
     try {
-      // Contoh data yang akan disinkronisasi
       Map<String, dynamic> sampleData = {
         'child_progress': {
           'last_updated': DateTime.now().toIso8601String(),
@@ -56,10 +55,7 @@ class _SyncDataScreenState extends State<SyncDataScreen> {
         }
       };
 
-      // Simpan data ke Firebase
       await _firebaseDB.saveData('child_progress/${DateTime.now().millisecondsSinceEpoch}', sampleData);
-
-      // Simpan status sync di local storage
       await LocalStorage.setSyncStatus(true);
       await LocalStorage.saveLastSyncTime(DateTime.now());
 
