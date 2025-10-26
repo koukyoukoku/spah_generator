@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:Eksplorasi/components/SmoothPress.dart';
+import 'package:Eksplorasi/models/languages/index.dart'; 
 
 class AppSettingsScreen extends StatefulWidget {
   @override
@@ -11,9 +13,67 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
   bool _vibrationEnabled = true;
   bool _animationsEnabled = true;
   double _volumeLevel = 0.8;
-  String _selectedLanguage = 'Indonesia';
+  String _selectedLanguage = 'id';
 
-  final List<String> _languages = ['Indonesia', 'English', '日本語'];
+  final Map<String, String> _languages = {
+    'id': 'Indonesia',
+    'en': 'English'
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+    _initializeLanguage();
+  }
+
+  void _initializeLanguage() async {
+    await AppLocalizations.init();
+    if (mounted) {
+      setState(() {
+        _selectedLanguage = AppLocalizations.currentLocale;
+      });
+    }
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _soundEnabled = prefs.getBool('sound_enabled') ?? true;
+      _vibrationEnabled = prefs.getBool('vibration_enabled') ?? true;
+      _animationsEnabled = prefs.getBool('animations_enabled') ?? true;
+      _volumeLevel = prefs.getDouble('volume_level') ?? 0.8;
+    });
+  }
+
+  Future<void> _saveSoundEnabled(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('sound_enabled', value);
+  }
+
+  Future<void> _saveVibrationEnabled(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('vibration_enabled', value);
+  }
+
+  Future<void> _saveAnimationsEnabled(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('animations_enabled', value);
+  }
+
+  Future<void> _saveVolumeLevel(double value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('volume_level', value);
+  }
+
+  Future<void> _saveLanguage(String value) async {
+    await AppLocalizations.setLocale(value);
+    if (mounted) {
+      setState(() {
+        _selectedLanguage = value;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +168,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
 
                         SizedBox(height: 30),
                         Text(
-                          'Pengaturan Aplikasi',
+                          AppLocalizations.get('parent_control.settings'),
                           style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.w700,
@@ -141,6 +201,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                                 setState(() {
                                   _soundEnabled = value;
                                 });
+                                _saveSoundEnabled(value);
                               },
                               Icons.volume_up_rounded,
                             ),
@@ -167,6 +228,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                                         setState(() {
                                           _volumeLevel = value;
                                         });
+                                        _saveVolumeLevel(value);
                                       },
                                       activeColor: Color(0xFFA5D8FF),
                                       inactiveColor: Colors.grey[300],
@@ -190,6 +252,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                                 setState(() {
                                   _vibrationEnabled = value;
                                 });
+                                _saveVibrationEnabled(value);
                               },
                               Icons.vibration_rounded,
                             ),
@@ -202,6 +265,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                                 setState(() {
                                   _animationsEnabled = value;
                                 });
+                                _saveAnimationsEnabled(value);
                               },
                               Icons.animation_rounded,
                             ),
@@ -246,15 +310,24 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                                   fontFamily: 'ComicNeue',
                                 ),
                                 onChanged: (String? newValue) {
-                                  setState(() {
-                                    _selectedLanguage = newValue!;
-                                  });
+                                  if (newValue != null) {
+                                    _saveLanguage(newValue);
+                                  }
                                 },
-                                items: _languages.map<DropdownMenuItem<String>>(
-                                  (String value) {
+                                items: _languages.entries.map<DropdownMenuItem<String>>(
+                                  (MapEntry<String, String> entry) {
                                     return DropdownMenuItem<String>(
-                                      value: value,
-                                      child: Text(value),
+                                      value: entry.key,
+                                      child: Row(
+                                        children: [
+                                          Text(
+                                            entry.key == 'id' ? '🇮🇩' : '🇺🇸',
+                                            style: TextStyle(fontSize: 16),
+                                          ),
+                                          SizedBox(width: 8),
+                                          Text(entry.value),
+                                        ],
+                                      ),
                                     );
                                   },
                                 ).toList(),
@@ -402,14 +475,22 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
     );
   }
 
-  void _resetToDefaults() {
+  void _resetToDefaults() async {
+    final prefs = await SharedPreferences.getInstance();
+    
     setState(() {
       _soundEnabled = true;
       _vibrationEnabled = true;
       _animationsEnabled = true;
       _volumeLevel = 0.8;
-      _selectedLanguage = 'Indonesia';
+      _selectedLanguage = 'id';
     });
+
+    await prefs.setBool('sound_enabled', true);
+    await prefs.setBool('vibration_enabled', true);
+    await prefs.setBool('animations_enabled', true);
+    await prefs.setDouble('volume_level', 0.8);
+    await AppLocalizations.setLocale('id');
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

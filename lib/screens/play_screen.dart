@@ -5,6 +5,7 @@ import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:Eksplorasi/components/SmoothPress.dart';
 import 'package:Eksplorasi/services/esp32_service.dart';
+import 'package:Eksplorasi/models/languages/index.dart';
 
 class PlayScreen extends StatefulWidget {
   @override
@@ -13,12 +14,12 @@ class PlayScreen extends StatefulWidget {
 
 class _PlayScreenState extends State<PlayScreen>
     with SingleTickerProviderStateMixin {
-  String _status = "Menyiapkan...";
+  String _status = '';
   bool _isReading = false;
   bool _nfcAvailable = false;
   bool _showSuccess = false;
   bool _useESP32Mode = false;
-  String _displayText = "Menyiapkan...";
+  String _displayText = '';
   String _lastUID = "";
 
   late AnimationController _animationController;
@@ -36,6 +37,17 @@ class _PlayScreenState extends State<PlayScreen>
     );
 
     _loadESP32Preference();
+    _initializeLanguage();
+  }
+
+  void _initializeLanguage() async {
+    await AppLocalizations.init();
+    if (mounted) {
+      setState(() {
+        _status = AppLocalizations.get('play_screen.preparing');
+        _displayText = AppLocalizations.get('play_screen.preparing');
+      });
+    }
   }
 
   Future<void> _loadESP32Preference() async {
@@ -53,8 +65,8 @@ class _PlayScreenState extends State<PlayScreen>
 
   void _initializeESP32Mode() async {
     setState(() {
-      _status = "Menyiapkan mode ESP32...";
-      _displayText = "Menyiapkan mode ESP32...";
+      _status = AppLocalizations.get('play_screen.preparing_esp32');
+      _displayText = AppLocalizations.get('play_screen.preparing_esp32');
     });
 
     _esp32StatusSubscription = _esp32Service.statusStream.listen((status) {
@@ -85,8 +97,8 @@ class _PlayScreenState extends State<PlayScreen>
           _handleTagRead(uid);
         } else {
           setState(() {
-            _status = "UID tidak valid";
-            _displayText = "UID tidak valid";
+            _status = AppLocalizations.get('play_screen.invalid_card');
+            _displayText = AppLocalizations.get('play_screen.invalid_card');
             _showSuccess = false;
           });
 
@@ -103,19 +115,19 @@ class _PlayScreenState extends State<PlayScreen>
 
   String _getUserFriendlyStatus(String status) {
     if (status.contains('ESP32 Found')) {
-      return "Perangkat ESP32 ditemukan";
+      return AppLocalizations.get('play_screen.esp32_found');
     } else if (status.contains('Connected to ESP32')) {
-      return "Terhubung ke ESP32";
+      return AppLocalizations.get('play_screen.esp32_connected');
     } else if (status.contains('Handshake Success')) {
-      return "Siap memindai RFID";
-    } else if (status.contains('Kartu tidak dikenali')) {
-      return "Kartu tidak dikenali";
-    } else if (status.contains('RFID Tidak Valid')) {
-      return "Kartu tidak valid";
+      return AppLocalizations.get('play_screen.ready_to_scan');
+    } else if (status.contains('Kartu tidak dikenali') || status.contains('Card not recognized')) {
+      return AppLocalizations.get('play_screen.card_not_recognized');
+    } else if (status.contains('RFID Tidak Valid') || status.contains('Invalid card')) {
+      return AppLocalizations.get('play_screen.invalid_card');
     } else if (status.contains('Connection Disconnected')) {
-      return "Koneksi terputus";
+      return AppLocalizations.get('play_screen.connection_lost');
     } else if (status.contains('Failed to connect')) {
-      return "Gagal terhubung";
+      return AppLocalizations.get('play_screen.connection_failed');
     }
     return status;
   }
@@ -126,27 +138,27 @@ class _PlayScreenState extends State<PlayScreen>
       if (availability == NFCAvailability.available) {
         setState(() {
           _nfcAvailable = true;
-          _status = "NFC siap";
-          _displayText = "Tempelkan perangkat ke tag NFC";
+          _status = AppLocalizations.get('play_screen.nfc_ready');
+          _displayText = AppLocalizations.get('play_screen.tap_nfc');
         });
         _startReading();
       } else if (availability == NFCAvailability.disabled) {
         setState(() {
           _nfcAvailable = false;
-          _status = "NFC dimatikan";
-          _displayText = "NFC dimatikan\n\nAktifkan NFC di pengaturan";
+          _status = AppLocalizations.get('play_screen.nfc_disabled');
+          _displayText = AppLocalizations.get('play_screen.enable_nfc');
         });
       } else if (availability == NFCAvailability.not_supported) {
         setState(() {
           _nfcAvailable = false;
-          _status = "NFC tidak didukung";
-          _displayText = "Perangkat tidak mendukung NFC";
+          _status = AppLocalizations.get('play_screen.nfc_not_supported');
+          _displayText = AppLocalizations.get('play_screen.nfc_not_supported');
         });
       }
     } catch (e) {
       setState(() {
-        _status = "Error cek NFC: $e";
-        _displayText = "Error memeriksa NFC";
+        _status = "${AppLocalizations.get('play_screen.nfc_error')}: $e";
+        _displayText = AppLocalizations.get('play_screen.nfc_error');
       });
     }
   }
@@ -154,10 +166,10 @@ class _PlayScreenState extends State<PlayScreen>
   void _startReading() {
     setState(() {
       _isReading = true;
-      _status = "Memulai pembacaan...";
+      _status = AppLocalizations.get('play_screen.starting_read');
       _displayText = _useESP32Mode
-          ? "Tempelkan kartu RFID ke reader"
-          : "Tempelkan perangkat ke tag NFC";
+          ? AppLocalizations.get('play_screen.tap_rfid')
+          : AppLocalizations.get('play_screen.tap_nfc');
       _showSuccess = false;
       _lastUID = "";
     });
@@ -176,8 +188,8 @@ class _PlayScreenState extends State<PlayScreen>
       try {
         final tag = await FlutterNfcKit.poll(
           timeout: Duration(seconds: 60),
-          iosMultipleTagMessage: "Terdeteksi Tag lebih dari 1!",
-          iosAlertMessage: "Scan benda",
+          iosMultipleTagMessage: AppLocalizations.get('play_screen.multiple_tags'),
+          iosAlertMessage: AppLocalizations.get('play_screen.scan_object'),
         );
 
         String tagId = '';
@@ -189,8 +201,8 @@ class _PlayScreenState extends State<PlayScreen>
           _handleTagRead(tagId);
         } else {
           setState(() {
-            _status = "Tag NFC tidak dikenali";
-            _displayText = "Tag NFC tidak dikenali";
+            _status = AppLocalizations.get('play_screen.tag_not_recognized');
+            _displayText = AppLocalizations.get('play_screen.tag_not_recognized');
             _showSuccess = false;
           });
           _animationController.repeat();
@@ -200,8 +212,8 @@ class _PlayScreenState extends State<PlayScreen>
 
         if (mounted && _isReading) {
           setState(() {
-            _status = "Menunggu tag berikutnya...";
-            _displayText = "Tempelkan ke tag lain...";
+            _status = AppLocalizations.get('play_screen.waiting_next');
+            _displayText = AppLocalizations.get('play_screen.tap_another');
             _showSuccess = false;
           });
 
@@ -210,8 +222,8 @@ class _PlayScreenState extends State<PlayScreen>
       } catch (e) {
         if (_isReading && mounted) {
           setState(() {
-            _status = "Terjadi Kesalahan! Coba lagi.";
-            _displayText = "Terjadi kesalahan, coba lagi";
+            _status = AppLocalizations.get('play_screen.error_try_again');
+            _displayText = AppLocalizations.get('play_screen.error_try_again');
             _showSuccess = false;
           });
           await Future.delayed(Duration(seconds: 1));
@@ -223,15 +235,15 @@ class _PlayScreenState extends State<PlayScreen>
   void _handleTagRead(String uid) {
     if (uid.length < 4) {
       setState(() {
-        _status = "UID terlalu pendek";
-        _displayText = "UID terlalu pendek";
+        _status = AppLocalizations.get('play_screen.invalid_card');
+        _displayText = AppLocalizations.get('play_screen.invalid_card');
         _showSuccess = false;
       });
       return;
     }
 
     setState(() {
-      _status = "Benda dikenali: $uid";
+      _status = "${AppLocalizations.get('play_screen.object_recognized')}: $uid";
       _displayText = uid;
       _lastUID = uid;
       _showSuccess = true;
@@ -270,8 +282,8 @@ class _PlayScreenState extends State<PlayScreen>
   void _stopReadingAndExit() {
     setState(() {
       _isReading = false;
-      _status = "Menghentikan...";
-      _displayText = "Menghentikan...";
+      _status = AppLocalizations.get('play_screen.stopping');
+      _displayText = AppLocalizations.get('play_screen.stopping');
     });
 
     _animationController.stop();
@@ -325,7 +337,9 @@ class _PlayScreenState extends State<PlayScreen>
           ),
           SizedBox(width: 6),
           Text(
-            _useESP32Mode ? "Mode ESP32" : "Mode NFC",
+            _useESP32Mode
+                ? AppLocalizations.get('play_screen.esp32_mode')
+                : AppLocalizations.get('play_screen.nfc_mode'),
             style: TextStyle(
               fontSize: 12,
               color: _useESP32Mode ? Color(0xFF4ECDC4) : Color(0xFFFE6D73),
@@ -468,9 +482,9 @@ class _PlayScreenState extends State<PlayScreen>
                         Text(
                           _isReading
                               ? (_showSuccess
-                                    ? "BERHASIL!"
-                                    : "Eksplorasi Benda")
-                              : "Eksplorasi Benda",
+                                    ? AppLocalizations.get('play_screen.success')
+                                    : AppLocalizations.get('play_screen.explore_object'))
+                              : AppLocalizations.get('play_screen.explore_object'),
                           style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.w700,
@@ -508,14 +522,16 @@ class _PlayScreenState extends State<PlayScreen>
                               Icon(
                                 _showSuccess
                                     ? Icons.check_circle_rounded
-                                    : ((_useESP32Mode && _esp32Service.isConnected)
+                                    : ((_useESP32Mode &&
+                                              _esp32Service.isConnected)
                                           ? Icons.wifi_rounded
                                           : (_nfcAvailable || _useESP32Mode
                                                 ? Icons.info_outline_rounded
                                                 : Icons.error_outline_rounded)),
                                 color: _showSuccess
                                     ? Color(0xFF4ECDC4)
-                                    : ((_useESP32Mode && _esp32Service.isConnected)
+                                    : ((_useESP32Mode &&
+                                              _esp32Service.isConnected)
                                           ? Color(0xFF4ECDC4)
                                           : (_nfcAvailable || _useESP32Mode
                                                 ? Color(0xFF4ECDC4)
@@ -536,7 +552,7 @@ class _PlayScreenState extends State<PlayScreen>
                               if (_showSuccess) ...[
                                 SizedBox(height: 10),
                                 Text(
-                                  "Benda berhasil dikenali!",
+                                  AppLocalizations.get('play_screen.object_recognized'),
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: Color(0xFF666666),
@@ -571,8 +587,8 @@ class _PlayScreenState extends State<PlayScreen>
                                 Expanded(
                                   child: Text(
                                     _useESP32Mode
-                                        ? "Tempelkan kartu RFID ke reader ESP32"
-                                        : "Tempelkan bagian atas perangkat ke tag NFC",
+                                        ? AppLocalizations.get('play_screen.tip_esp32')
+                                        : AppLocalizations.get('play_screen.tip_nfc'),
                                     style: TextStyle(
                                       fontSize: 14,
                                       color: Color(0xFF2D5A7E),
@@ -616,7 +632,7 @@ class _PlayScreenState extends State<PlayScreen>
                           ),
                           SizedBox(width: 12),
                           Text(
-                            "KEMBALI",
+                            AppLocalizations.get('play_screen.back'),
                             style: TextStyle(
                               fontSize: 18,
                               color: Colors.white,

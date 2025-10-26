@@ -8,50 +8,77 @@ import 'parent_control/sync_data_screen.dart';
 import 'parent_control/usage_guide_screen.dart';
 import 'parent_control/app_settings_screen.dart';
 import 'parent_control/data_management_screen.dart';
+import 'package:Eksplorasi/models/languages/index.dart'; // Import localization
 
-class ParentControlScreen extends StatelessWidget {
+class ParentControlScreen extends StatefulWidget {
   final ESP32Service esp32Service;
 
   const ParentControlScreen({Key? key, required this.esp32Service})
     : super(key: key);
 
+  @override
+  _ParentControlScreenState createState() => _ParentControlScreenState();
+}
+
+class _ParentControlScreenState extends State<ParentControlScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _initializeLanguage();
+  }
+
+  void _initializeLanguage() async {
+    await AppLocalizations.init();
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _toggleLanguage() async {
+    await AppLocalizations.toggleLanguage();
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  // Update the menuItems list
   List<ParentMenuItem> get menuItems => [
     ParentMenuItem(
-      title: 'Ubah PIN',
+      title: AppLocalizations.get('parent_control.change_pin'),
       icon: Icons.lock,
       color: Color(0xFF4ECDC4),
       screenBuilder: (context) => ChangePinScreen(),
     ),
     ParentMenuItem(
-      title: 'Sinkronisasi',
+      title: AppLocalizations.get('parent_control.sync'),
       icon: Icons.cloud_sync,
       color: Color(0xFFFE6D73),
       screenBuilder: (context) => SyncDataScreen(),
     ),
     ParentMenuItem(
-      title: 'Panduan',
+      title: AppLocalizations.get('parent_control.guide'),
       icon: Icons.menu_book,
       color: Color(0xFFFED766),
       screenBuilder: (context) => UsageGuideScreen(),
     ),
     ParentMenuItem(
-      title: 'Pengaturan',
+      title: AppLocalizations.get('parent_control.settings'),
       icon: Icons.settings,
       color: Color(0xFFA5D8FF),
       screenBuilder: (context) => AppSettingsScreen(),
     ),
     ParentMenuItem(
-      title: 'Data Anak',
+      title: AppLocalizations.get('parent_control.child_data'),
       icon: Icons.people,
       color: Color(0xFFC8A2C8),
       screenBuilder: (context) => DataManagementScreen(),
     ),
     ParentMenuItem(
-      title: 'Setup ESP32',
+      title: AppLocalizations.get('parent_control.esp32_setup'),
       icon: Icons.developer_board,
       color: Color(0xFFFFB347),
       screenBuilder: (context) =>
-          ESP32ManagerScreen(esp32Service: esp32Service),
+          ESP32ManagerScreen(esp32Service: widget.esp32Service),
     ),
   ];
 
@@ -103,6 +130,49 @@ class ParentControlScreen extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
+                          // Language Toggle Button
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              SmoothPressButton(
+                                onPressed: () => _toggleLanguage(),
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black12,
+                                        blurRadius: 6,
+                                        offset: Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        AppLocalizations.currentLocale == 'id' ? '🇮🇩' : '🇺🇸',
+                                        style: TextStyle(fontSize: 16),
+                                      ),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        AppLocalizations.currentLocale == 'id' ? 'ID' : 'EN',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFF2D5A7E),
+                                          fontFamily: 'ComicNeue',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 20),
+
                           Container(
                             width: 120,
                             height: 120,
@@ -130,7 +200,7 @@ class ParentControlScreen extends StatelessWidget {
                           SizedBox(height: 20),
 
                           Text(
-                            'Kontrol Orang Tua',
+                            AppLocalizations.get('parent_control.title'),
                             style: TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.w700,
@@ -141,7 +211,7 @@ class ParentControlScreen extends StatelessWidget {
                           SizedBox(height: 8),
 
                           Text(
-                            'Kelola pengaturan aplikasi untuk anak',
+                            AppLocalizations.get('parent_control.subtitle'),
                             style: TextStyle(
                               fontSize: 16,
                               color: Color(0xFF666666),
@@ -191,7 +261,7 @@ class ParentControlScreen extends StatelessWidget {
                             child: Column(
                               children: [
                                 Text(
-                                  'Tentang Aplikasi',
+                                  AppLocalizations.get('parent_control.about_app'),
                                   style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.w700,
@@ -202,7 +272,7 @@ class ParentControlScreen extends StatelessWidget {
                                 SizedBox(height: 12),
 
                                 Text(
-                                  'Aplikasi Eksplorasi dirancang khusus untuk anak-anak dengan antarmuka yang sederhana dan ramah.',
+                                  AppLocalizations.get('parent_control.about_description'),
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: Color(0xFF666666),
@@ -213,28 +283,13 @@ class ParentControlScreen extends StatelessWidget {
                                 ),
                                 SizedBox(height: 12),
 
-                                Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Color.fromARGB(
-                                      255,
-                                      255,
-                                      185,
-                                      185,
-                                    ).withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    'Made With Love ❤️',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Color.fromARGB(255, 236, 105, 105),
-                                      fontFamily: 'ComicNeue',
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                Text(
+                                  AppLocalizations.get('parent_control.made_with_love'),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Color.fromARGB(255, 236, 105, 105),
+                                    fontFamily: 'ComicNeue',
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],
@@ -358,4 +413,4 @@ class ParentControlScreen extends StatelessWidget {
       ),
     );
   }
-}
+} 

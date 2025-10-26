@@ -8,6 +8,7 @@ import 'package:Eksplorasi/services/esp32_service.dart';
 import 'package:Eksplorasi/components/SmoothPress.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:Eksplorasi/models/languages/index.dart'; 
 
 class MenuUtama extends StatefulWidget {
   final ESP32Service esp32Service;
@@ -31,10 +32,18 @@ class _MenuUtamaState extends State<MenuUtama> {
     super.initState();
     _setupConnectionListener();
     _initializeApp();
+    _initializeLanguage();
   }
 
   void _initializeApp() async {
     await _loadESP32Preference();
+  }
+
+  void _initializeLanguage() async {
+    await AppLocalizations.init();
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _setupConnectionListener() {
@@ -119,6 +128,15 @@ class _MenuUtamaState extends State<MenuUtama> {
     }
   }
 
+  Future<void> _toggleLanguage() async {
+    await AppLocalizations.toggleLanguage();
+    print('Bahasa diubah ke: ${AppLocalizations.currentLocale}');
+    print(AppLocalizations.get('navigation.exploration'));
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   Future<void> _startGame(BuildContext context) async {
     if (_useESP32Mode && !_isConnectedToESP32) {
       _showConnectionError(context);
@@ -193,6 +211,55 @@ class _MenuUtamaState extends State<MenuUtama> {
                   padding: EdgeInsets.all(20),
                   child: Column(
                     children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          SmoothPressButton(
+                            onPressed: () => _toggleLanguage(),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black12,
+                                    blurRadius: 6,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    AppLocalizations.currentLocale == 'id'
+                                        ? '🇮🇩'
+                                        : '🇺🇸',
+                                    style: TextStyle(fontSize: 16),
+                                  ),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    AppLocalizations.currentLocale == 'id'
+                                        ? 'ID'
+                                        : 'EN',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF2D5A7E),
+                                      fontFamily: 'ComicNeue',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 10),
+
                       Container(
                         padding: EdgeInsets.symmetric(
                           horizontal: 16,
@@ -228,9 +295,15 @@ class _MenuUtamaState extends State<MenuUtama> {
                             Text(
                               _useESP32Mode
                                   ? (_isConnectedToESP32
-                                        ? "Terhubung ESP32"
-                                        : "Mencari ESP32...")
-                                  : "Mode NFC Aktif",
+                                        ? AppLocalizations.get(
+                                            'play_screen.esp32_connected',
+                                          )
+                                        : AppLocalizations.get(
+                                            'play_screen.preparing_esp32',
+                                          ))
+                                  : AppLocalizations.get(
+                                      'play_screen.nfc_mode',
+                                    ),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -245,7 +318,7 @@ class _MenuUtamaState extends State<MenuUtama> {
                       SizedBox(height: 30),
 
                       Text(
-                        'Eksplorasi',
+                        AppLocalizations.get('navigation.exploration'),
                         style: TextStyle(
                           fontSize: 48,
                           fontWeight: FontWeight.w700,
@@ -290,7 +363,7 @@ class _MenuUtamaState extends State<MenuUtama> {
                           child: _MainActionButton(
                             color: Color(0xFF4ECDC4),
                             icon: Icons.play_arrow_rounded,
-                            text: 'MULAI',
+                            text: AppLocalizations.get('common.start'),
                             emoji: '🚀',
                             isEnabled: !_useESP32Mode || _isConnectedToESP32,
                           ),
@@ -333,7 +406,7 @@ class _MenuUtamaState extends State<MenuUtama> {
                         },
                         child: _BottomActionButton(
                           icon: Icons.family_restroom,
-                          text: 'Orang Tua',
+                          text: AppLocalizations.get('navigation.parent'),
                           color: Color(0xFF4ECDC4),
                         ),
                       ),
@@ -344,7 +417,7 @@ class _MenuUtamaState extends State<MenuUtama> {
                           children: [
                             _BottomActionButton(
                               icon: Icons.settings,
-                              text: 'Pengaturan',
+                              text: AppLocalizations.get('navigation.settings'),
                               color: Color(0xFFFE6D73),
                             ),
                             if (_useESP32Mode && !_isConnectedToESP32)
@@ -389,7 +462,7 @@ class _MenuUtamaState extends State<MenuUtama> {
             Icon(Icons.wifi_off, color: Colors.orange, size: 28),
             SizedBox(width: 12),
             Text(
-              'Perangkat Tidak Terhubung',
+              AppLocalizations.get('play_screen.connection_failed'),
               style: TextStyle(
                 fontFamily: 'ComicNeue',
                 fontWeight: FontWeight.w600,
@@ -399,7 +472,7 @@ class _MenuUtamaState extends State<MenuUtama> {
           ],
         ),
         content: Text(
-          'Harap hubungkan ke perangkat ESP32 terlebih dahulu melalui menu Pengaturan.',
+          AppLocalizations.get('play_screen.connection_lost'),
           style: TextStyle(
             fontFamily: 'ComicNeue',
             fontSize: 16,
@@ -410,7 +483,7 @@ class _MenuUtamaState extends State<MenuUtama> {
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
             child: Text(
-              'TUTUP',
+              AppLocalizations.get('play_screen.back'),
               style: TextStyle(
                 fontFamily: 'ComicNeue',
                 fontWeight: FontWeight.w600,
@@ -424,7 +497,7 @@ class _MenuUtamaState extends State<MenuUtama> {
               _openESP32Manager(context);
             },
             child: Text(
-              'PENGATURAN',
+              AppLocalizations.get('navigation.settings'),
               style: TextStyle(
                 fontFamily: 'ComicNeue',
                 fontWeight: FontWeight.w600,
