@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:Eksplorasi/components/SmoothPress.dart';
 import 'package:Eksplorasi/utils/parent_control.dart';
@@ -16,6 +17,8 @@ class _PasswordScreenState extends State<PasswordScreen> {
   FocusNode _pinFocusNode = FocusNode();
   String _errorMessage = '';
   bool _isLoading = false;
+  bool _isVerifying = false;
+  Timer? _debounceTimer;
 
   @override
   void initState() {
@@ -28,12 +31,15 @@ class _PasswordScreenState extends State<PasswordScreen> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _pinFocusNode.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
   void _verifyPassword() async {
+    if (_isVerifying) return;
+
     if (_passwordController.text.isEmpty) {
       setState(() {
         _errorMessage = 'Masukkan PIN';
@@ -50,21 +56,76 @@ class _PasswordScreenState extends State<PasswordScreen> {
 
     setState(() {
       _isLoading = true;
+      _isVerifying = true;
       _errorMessage = '';
     });
 
-    final isCorrect = await ParentControlService.verifyPassword(
-      _passwordController.text,
-    );
+    try {
+      final isCorrect = await ParentControlService.verifyPassword(
+        _passwordController.text,
+      );
 
-    if (isCorrect) {
-      widget.onSuccess();
-    } else {
-      setState(() {
-        _errorMessage = 'PIN salah! Coba lagi.';
-        _isLoading = false;
+      if (!mounted) return;
+
+      if (isCorrect) {
+        widget.onSuccess();
+      } else {
+        setState(() {
+          _errorMessage = 'PIN salah! Coba lagi.';
+          _isLoading = false;
+          _isVerifying = false;
+        });
         _passwordController.clear();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      
+      setState(() {
+        _errorMessage = 'Terjadi kesalahan. Coba lagi.';
+        _isLoading = false;
+        _isVerifying = false;
       });
+      _passwordController.clear();
+    }
+  }
+
+  void _onPasswordChanged(String value) {
+    setState(() {
+      _errorMessage = '';
+    });
+    
+    _debounceTimer?.cancel();
+    
+    if (value.length == 4) {
+      _debounceTimer = Timer(Duration(milliseconds: 300), () {
+        if (!_isVerifying && mounted) {
+          _verifyPassword();
+        }
+      });
+    }
+  }
+
+  void _handleBack() {
+    _debounceTimer?.cancel();
+    if (mounted) {
+      Navigator.pop(context);
+    }
+  }
+
+  void _handlePinButtonPressed(String digit) {
+    if (_passwordController.text.length < 4) {
+      _passwordController.text += digit;
+      _onPasswordChanged(_passwordController.text);
+      _pinFocusNode.requestFocus();
+    }
+  }
+
+  void _handleBackspace() {
+    if (_passwordController.text.isNotEmpty) {
+      _passwordController.text = _passwordController.text
+          .substring(0, _passwordController.text.length - 1);
+      _onPasswordChanged(_passwordController.text);
+      _pinFocusNode.requestFocus();
     }
   }
 
@@ -100,6 +161,7 @@ class _PasswordScreenState extends State<PasswordScreen> {
                 ),
               ),
             ),
+            
             Positioned(
               top: 16,
               left: 16,
@@ -121,10 +183,11 @@ class _PasswordScreenState extends State<PasswordScreen> {
                     color: Color(0xFF2D5A7E),
                     size: 24,
                   ),
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: _handleBack,
                 ),
               ),
             ),
+            
             Column(
               children: [
                 SizedBox(height: 40),
@@ -152,10 +215,22 @@ class _PasswordScreenState extends State<PasswordScreen> {
                               width: 4,
                             ),
                           ),
-                          child: Icon(
-                            Icons.lock_outline_rounded,
-                            size: 60,
-                            color: Color(0xFF4ECDC4),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Icon(
+                                Icons.lock_outline_rounded,
+                                size: 60,
+                                color: Color(0xFF4ECDC4),
+                              ),
+                              if (_isLoading)
+                                CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Color(0xFF4ECDC4),
+                                  ),
+                                  strokeWidth: 3,
+                                ),
+                            ],
                           ),
                         ),
 
@@ -249,13 +324,15 @@ class _PasswordScreenState extends State<PasswordScreen> {
                                   size: 18,
                                 ),
                                 SizedBox(width: 8),
-                                Text(
-                                  _errorMessage,
-                                  style: TextStyle(
-                                    color: Color(0xFFD32F2F),
-                                    fontSize: 14,
-                                    fontFamily: 'ComicNeue',
-                                    fontWeight: FontWeight.w500,
+                                Flexible(
+                                  child: Text(
+                                    _errorMessage,
+                                    style: TextStyle(
+                                      color: Color(0xFFD32F2F),
+                                      fontSize: 14,
+                                      fontFamily: 'ComicNeue',
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -281,16 +358,15 @@ class _PasswordScreenState extends State<PasswordScreen> {
                               counterText: "",
                               border: InputBorder.none,
                             ),
-                            onChanged: (value) {
-                              setState(() {});
-                              if (value.length == 4) {
-                                Future.delayed(Duration(milliseconds: 300), () {
-                                  _verifyPassword();
-                                });
-                              }
-                            },
+                            onChanged: _onPasswordChanged,
+                            readOnly: true,
+                            showCursor: false,
+                            enableInteractiveSelection: false,
                           ),
                         ),
+
+                        SizedBox(height: 20),
+                        _buildManualPinPad(),
                       ],
                     ),
                   ),
@@ -298,6 +374,80 @@ class _PasswordScreenState extends State<PasswordScreen> {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildManualPinPad() {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 15,
+        mainAxisSpacing: 15,
+        childAspectRatio: 1.5,
+      ),
+      itemCount: 12,
+      itemBuilder: (context, index) {
+        if (index == 9) {
+          return SizedBox();
+        } else if (index == 10) {
+          return _buildPinButton('0', onPressed: () {
+            _handlePinButtonPressed('0');
+          });
+        } else if (index == 11) {
+          return _buildPinButton(
+            Icons.backspace_outlined,
+            onPressed: _handleBackspace,
+            isIcon: true,
+          );
+        } else {
+          final number = (index + 1).toString();
+          return _buildPinButton(number, onPressed: () {
+            _handlePinButtonPressed(number);
+          });
+        }
+      },
+    );
+  }
+
+  Widget _buildPinButton(dynamic content, {required VoidCallback onPressed, bool isIcon = false}) {
+    return SmoothPressButton(
+      onPressed: onPressed,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 6,
+              offset: Offset(0, 3),
+            ),
+          ],
+          border: Border.all(
+            color: Color(0xFF4ECDC4).withOpacity(0.3),
+            width: 2,
+          ),
+        ),
+        child: Center(
+          child: isIcon
+              ? Icon(
+                  content as IconData,
+                  color: Color(0xFF2D5A7E),
+                  size: 24,
+                )
+              : Text(
+                  content as String,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF2D5A7E),
+                    fontFamily: 'ComicNeue',
+                  ),
+                ),
         ),
       ),
     );

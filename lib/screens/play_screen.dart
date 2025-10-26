@@ -69,6 +69,7 @@ class _PlayScreenState extends State<PlayScreen>
               !status.contains('No devices') &&
               !status.contains('UDP Discovery') &&
               !status.contains('Data:') &&
+              !status.contains('Status:') &&
               !status.contains('Ping:')) {
             _displayText = _getUserFriendlyStatus(status);
           }
@@ -292,6 +293,8 @@ class _PlayScreenState extends State<PlayScreen>
     _animationController.dispose();
 
     if (_useESP32Mode) {
+      _esp32DataSubscription?.cancel();
+      _esp32StatusSubscription?.cancel();
     } else {
       FlutterNfcKit.finish();
     }
@@ -505,16 +508,14 @@ class _PlayScreenState extends State<PlayScreen>
                               Icon(
                                 _showSuccess
                                     ? Icons.check_circle_rounded
-                                    : ((_useESP32Mode &&
-                                              _esp32Service.isConnected)
+                                    : ((_useESP32Mode && _esp32Service.isConnected)
                                           ? Icons.wifi_rounded
                                           : (_nfcAvailable || _useESP32Mode
                                                 ? Icons.info_outline_rounded
                                                 : Icons.error_outline_rounded)),
                                 color: _showSuccess
                                     ? Color(0xFF4ECDC4)
-                                    : ((_useESP32Mode &&
-                                              _esp32Service.isConnected)
+                                    : ((_useESP32Mode && _esp32Service.isConnected)
                                           ? Color(0xFF4ECDC4)
                                           : (_nfcAvailable || _useESP32Mode
                                                 ? Color(0xFF4ECDC4)
