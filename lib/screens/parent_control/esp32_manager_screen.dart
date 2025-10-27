@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:Eksplorasi/services/esp32_service.dart';
 import 'package:Eksplorasi/components/SmoothPress.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:Eksplorasi/models/languages/index.dart';
 
 class ESP32ManagerScreen extends StatefulWidget {
   final ESP32Service esp32Service;
@@ -47,6 +48,7 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
 
     _loadESP32Preference();
     _setupStreamListeners();
+    _initializeLanguage();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_isConnected) {
@@ -56,6 +58,13 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
         widget.esp32Service.startDiscovery();
       }
     });
+  }
+
+  void _initializeLanguage() async {
+    await AppLocalizations.init();
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _loadESP32Preference() async {
@@ -275,7 +284,9 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Mode Eksplorasi',
+                  AppLocalizations.get(
+                    'esp32_manager.mode_exploration',
+                  ), 
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -285,7 +296,11 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  _useESP32Mode ? 'Menggunakan ESP32' : 'Menggunakan NFC',
+                  _useESP32Mode
+                      ? AppLocalizations.get('esp32_manager.using_esp32')
+                      : AppLocalizations.get(
+                          'esp32_manager.using_nfc',
+                        ),
                   style: TextStyle(
                     fontSize: 14,
                     color: Color(0xFF666666),
@@ -342,7 +357,9 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
             ),
             SizedBox(height: 16),
             Text(
-              'MODE NFC AKTIF',
+              AppLocalizations.get(
+                'esp32_manager.nfc_mode_active',
+              ),
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w700,
@@ -352,7 +369,9 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
             ),
             SizedBox(height: 8),
             Text(
-              'Gunakan NFC perangkat untuk Eksplorasi benda',
+              AppLocalizations.get(
+                'esp32_manager.nfc_mode_description',
+              ),
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.white.withOpacity(0.9),
@@ -402,7 +421,11 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
           ),
           SizedBox(height: 16),
           Text(
-            isActuallyConnected ? 'TERHUBUNG' : 'MENGHUBUNGKAN...',
+            isActuallyConnected
+                ? AppLocalizations.get('esp32_manager.connected')
+                : AppLocalizations.get(
+                    'esp32_manager.connecting',
+                  ),
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w700,
@@ -412,7 +435,9 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
           ),
           SizedBox(height: 8),
           Text(
-            _isConnected ? "Perangkat terhubung ke ESP32" : _status,
+            _isConnected
+                ? AppLocalizations.get('esp32_manager.connected_to_esp32')
+                : _status,
             style: TextStyle(
               fontSize: 16,
               color: Colors.white.withOpacity(0.9),
@@ -427,10 +452,14 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildInfoItem(Icons.developer_board, 'IP Device', deviceIP),
+                _buildInfoItem(
+                  Icons.developer_board,
+                  AppLocalizations.get('esp32_manager.ip_device'),
+                  deviceIP,
+                ),
                 _buildInfoItem(
                   Icons.wifi,
-                  'WiFi',
+                  AppLocalizations.get('esp32_manager.wifi'),
                   widget.esp32Service.wifiName,
                 ),
               ],
@@ -487,7 +516,9 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
               Icon(Icons.memory, color: Color(0xFF4ECDC4), size: 24),
               SizedBox(width: 8),
               Text(
-                'Info Perangkat',
+                AppLocalizations.get(
+                  'esp32_manager.device_info',
+                ),
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
@@ -499,17 +530,27 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
           ),
           SizedBox(height: 16),
           if (_deviceData['rssi'] != null)
-            _buildDeviceInfoRow('📶 Sinyal WiFi', '${_deviceData['rssi']} dBm'),
+            _buildDeviceInfoRow(
+              AppLocalizations.get(
+                'esp32_manager.wifi_signal',
+              ),
+              '${_deviceData['rssi']} dBm',
+            ),
           if (_deviceData['ssid'] != null)
-            _buildDeviceInfoRow('🌐 WiFi Terhubung', _deviceData['ssid']),
+            _buildDeviceInfoRow(
+              AppLocalizations.get(
+                'esp32_manager.connected_wifi',
+              ), 
+              _deviceData['ssid'],
+            ),
           if (_deviceData['uptime'] != null)
             _buildDeviceInfoRow(
-              '⏱️ Waktu Aktif',
+              AppLocalizations.get('esp32_manager.uptime'),
               _formatUptime(_deviceData['uptime']),
             ),
           if (_deviceData['free_heap'] != null)
             _buildDeviceInfoRow(
-              '💾 Memory',
+              AppLocalizations.get('esp32_manager.memory'),
               _formatBytes(_deviceData['free_heap']),
             ),
         ],
@@ -571,7 +612,9 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
               Icon(Icons.search, color: Color(0xFFFE6D73), size: 24),
               SizedBox(width: 8),
               Text(
-                'Pencarian Perangkat',
+                AppLocalizations.get(
+                  'esp32_manager.device_discovery',
+                ), 
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
@@ -616,7 +659,11 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
                     Icon(Icons.search, color: Colors.white, size: 20),
                   SizedBox(width: 8),
                   Text(
-                    _isScanning ? 'SEDANG MENCARI...' : 'MULAI PENCARIAN',
+                    _isScanning
+                        ? AppLocalizations.get('esp32_manager.searching')
+                        : AppLocalizations.get(
+                            'esp32_manager.start_discovery',
+                          ),  
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -631,7 +678,7 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
           if (_foundDevices.isNotEmpty) ...[
             SizedBox(height: 16),
             Text(
-              'Perangkat Ditemukan (${_foundDevices.length})',
+              '${AppLocalizations.get('esp32_manager.devices_found')} (${_foundDevices.length})',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -710,7 +757,9 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
                           Icon(Icons.refresh, color: Colors.white, size: 18),
                           SizedBox(width: 8),
                           Text(
-                            'REFRESH',
+                            AppLocalizations.get(
+                              'esp32_manager.refresh',
+                            ),
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
@@ -744,7 +793,9 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
                           ),
                           SizedBox(width: 8),
                           Text(
-                            'TEST',
+                            AppLocalizations.get(
+                              'esp32_manager.test',
+                            ),
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
@@ -783,7 +834,9 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
               Icon(Icons.wifi, color: Color(0xFF4ECDC4), size: 24),
               SizedBox(width: 8),
               Text(
-                'Setup WiFi Baru',
+                AppLocalizations.get(
+                  'esp32_manager.wifi_setup',
+                ),
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
@@ -795,7 +848,9 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
           ),
           SizedBox(height: 16),
           Text(
-            'Untuk perangkat baru, masukkan kredensial WiFi:',
+            AppLocalizations.get(
+              'esp32_manager.wifi_setup_description',
+            ),
             style: TextStyle(
               fontSize: 14,
               color: Color(0xFF666666),
@@ -805,16 +860,24 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
           SizedBox(height: 16),
           _buildInputField(
             controller: _ssidController,
-            label: 'Nama WiFi (SSID)',
+            label: AppLocalizations.get(
+              'esp32_manager.wifi_ssid',
+            ),
             icon: Icons.wifi,
-            hint: 'Masukkan nama WiFi',
+            hint: AppLocalizations.get(
+              'esp32_manager.enter_wifi_name',
+            ),
           ),
           SizedBox(height: 12),
           _buildInputField(
             controller: _passwordController,
-            label: 'Password WiFi',
+            label: AppLocalizations.get(
+              'esp32_manager.wifi_password',
+            ),
             icon: Icons.lock,
-            hint: 'Masukkan password',
+            hint: AppLocalizations.get(
+              'esp32_manager.enter_password',
+            ),
             obscureText: true,
           ),
           SizedBox(height: 20),
@@ -852,7 +915,11 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
                     Icon(Icons.send, color: Colors.white, size: 20),
                   SizedBox(width: 8),
                   Text(
-                    _isProvisioning ? 'MENGIRIM...' : 'KIRIM KE PERANGKAT',
+                    _isProvisioning
+                        ? AppLocalizations.get('esp32_manager.sending')
+                        : AppLocalizations.get(
+                            'esp32_manager.send_to_device',
+                          ),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -927,7 +994,9 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
 
   void _provisionESP32() {
     if (_ssidController.text.isEmpty || _passwordController.text.isEmpty) {
-      _showErrorDialog('Harap isi nama dan password WiFi');
+      _showErrorDialog(
+        AppLocalizations.get('esp32_manager.fill_wifi_credentials'),
+      );
       return;
     }
 
@@ -948,7 +1017,7 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
             Icon(Icons.warning, color: Colors.orange, size: 28),
             SizedBox(width: 12),
             Text(
-              'Perhatian',
+              AppLocalizations.get('esp32_manager.warning'),
               style: TextStyle(
                 fontFamily: 'ComicNeue',
                 fontWeight: FontWeight.w600,
@@ -969,7 +1038,9 @@ class _ESP32ManagerScreenState extends State<ESP32ManagerScreen> {
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
             child: Text(
-              'MENGERTI',
+              AppLocalizations.get(
+                'esp32_manager.understand',
+              ),
               style: TextStyle(
                 fontFamily: 'ComicNeue',
                 fontWeight: FontWeight.w600,

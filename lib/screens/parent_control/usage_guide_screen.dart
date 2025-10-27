@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:Eksplorasi/components/SmoothPress.dart';
+import 'package:Eksplorasi/models/languages/index.dart';
 
 class UsageGuideScreen extends StatefulWidget {
   @override
@@ -7,34 +8,53 @@ class UsageGuideScreen extends StatefulWidget {
 }
 
 class _UsageGuideScreenState extends State<UsageGuideScreen> {
-  final List<GuideItem> _guideItems = [
-    GuideItem(
-      title: 'Cara Menggunakan NFC',
-      description: 'Tutorial penggunaan fitur NFC untuk Eksplorasi benda',
-      icon: Icons.nfc_rounded,
-      color: Color(0xFF4ECDC4),
-    ),
-    GuideItem(
-      title: 'Fitur Kuiz',
-      description: 'Cara anak berinteraksi dengan kuis edukasi',
-      icon: Icons.quiz_rounded,
-      color: Color(0xFFFE6D73),
-    ),
-    GuideItem(
-      title: 'Pengaturan Orang Tua',
-      description: 'Cara mengakses dan menggunakan kontrol orang tua',
-      icon: Icons.family_restroom_rounded,
-      color: Color(0xFFFED766),
-    ),
-    GuideItem(
-      title: 'Tips Belajar',
-      description: 'Tips untuk mendampingi SPAH selama belajar',
-      icon: Icons.lightbulb_rounded,
-      color: Color(0xFFA5D8FF),
-    ),
-  ];
-
+  late List<GuideItem> _guideItems;
   int _expandedIndex = -1;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeLanguage();
+    _initializeGuideItems();
+  }
+
+  void _initializeLanguage() async {
+    await AppLocalizations.init();
+    if (mounted) {
+      setState(() {
+        _initializeGuideItems();
+      });
+    }
+  }
+
+  void _initializeGuideItems() {
+    _guideItems = [
+      GuideItem(
+        title: AppLocalizations.get('usage_guide.nfc_title'),
+        description: AppLocalizations.get('usage_guide.nfc_description'),
+        icon: Icons.nfc_rounded,
+        color: Color(0xFF4ECDC4),
+      ),
+      GuideItem(
+        title: AppLocalizations.get('usage_guide.quiz_title'),
+        description: AppLocalizations.get('usage_guide.quiz_description'),
+        icon: Icons.quiz_rounded,
+        color: Color(0xFFFE6D73),
+      ),
+      GuideItem(
+        title: AppLocalizations.get('usage_guide.parental_title'),
+        description: AppLocalizations.get('usage_guide.parental_description'),
+        icon: Icons.family_restroom_rounded,
+        color: Color(0xFFFED766),
+      ),
+      GuideItem(
+        title: AppLocalizations.get('usage_guide.tips_title'),
+        description: AppLocalizations.get('usage_guide.tips_description'),
+        icon: Icons.lightbulb_rounded,
+        color: Color(0xFFA5D8FF),
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +99,7 @@ class _UsageGuideScreenState extends State<UsageGuideScreen> {
 
                         SizedBox(height: 30),
                         Text(
-                          'Panduan Penggunaan',
+                          AppLocalizations.get('usage_guide.title'),
                           style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.w700,
@@ -91,7 +111,7 @@ class _UsageGuideScreenState extends State<UsageGuideScreen> {
                         SizedBox(height: 8),
 
                         Text(
-                          'Pelajari cara menggunakan aplikasi dengan optimal',
+                          AppLocalizations.get('usage_guide.subtitle'),
                           style: TextStyle(
                             fontSize: 16,
                             color: Color(0xFF666666),
@@ -253,7 +273,7 @@ class _UsageGuideScreenState extends State<UsageGuideScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      _getGuideContent(item.title),
+                      _getGuideContent(index),
                       style: TextStyle(
                         fontSize: 14,
                         color: Color(0xFF2D5A7E),
@@ -271,18 +291,18 @@ class _UsageGuideScreenState extends State<UsageGuideScreen> {
     );
   }
 
-  String _getGuideContent(String title) {
-    switch (title) {
-      case 'Cara Menggunakan NFC':
-        return '1. Tekan tombol "MULAI" di menu utama\n2. Tempelkan perangkat ke benda yang memiliki tag NFC\n3. Aplikasi akan otomatis mendeteksi dan memberikan feedback\n4. Anak dapat mengEksplorasi berbagai benda secara bergantian';
-      case 'Fitur Kuis':
-        return '1. Pilih menu "KUIS" di halaman utama\n2. Jawab pertanyaan yang muncul dengan menekan pilihan jawaban\n3. Dapatkan feedback langsung untuk setiap jawaban\n4. Lihat progres belajar anak di bagian laporan';
-      case 'Pengaturan Orang Tua':
-        return '1. Akses menu "Panduan Untuk Orang Tua"\n2. Masukkan PIN akses (default: 1234)\n3. Kelola berbagai pengaturan sesuai kebutuhan\n4. Ubah PIN secara berkala untuk keamanan';
-      case 'Tips Belajar':
-        return '• dampingi SCP selama menggunakan aplikasi karena sangat berbahaya\n• berikan pujian untuk setiap keberhasilan\n• Potong2 kol dan daun bawang cuci dan tiriskan, potong bawang merah dan putih dan cabe tipis2, siapkan wajan goreng telor orak arek sisihkan\n• Tumis bawang merah putih cabe sampek layu, masukan terasi, kol dan daun bawang aduk rata\n• Masukan telor orak arik kedalam nasi yg sudah tempur bumbu, tambahkan penyedap rasa, garam secukupnya, tambahkan gula pasir sedikit jika perlu';
+  String _getGuideContent(int index) {
+    switch (index) {
+      case 0:
+        return AppLocalizations.get('usage_guide.nfc_content');
+      case 1:
+        return AppLocalizations.get('usage_guide.quiz_content');
+      case 2:
+        return AppLocalizations.get('usage_guide.parental_content');
+      case 3:
+        return AppLocalizations.get('usage_guide.tips_content');
       default:
-        return 'Konten panduan akan segera tersedia...';
+        return AppLocalizations.get('usage_guide.default_content');
     }
   }
 }

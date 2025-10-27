@@ -337,7 +337,7 @@ class _MenuUtamaState extends State<MenuUtama> {
                       SizedBox(height: 8),
 
                       Text(
-                        'Belajar Seru Untuk SCP-173',
+                        AppLocalizations.get('navigation.subtitle'),
                         style: TextStyle(
                           fontSize: 20,
                           color: Color(0xFF666666),

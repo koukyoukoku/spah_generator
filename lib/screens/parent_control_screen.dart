@@ -8,7 +8,7 @@ import 'parent_control/sync_data_screen.dart';
 import 'parent_control/usage_guide_screen.dart';
 import 'parent_control/app_settings_screen.dart';
 import 'parent_control/data_management_screen.dart';
-import 'package:Eksplorasi/models/languages/index.dart'; // Import localization
+import 'package:Eksplorasi/models/languages/index.dart';
 
 class ParentControlScreen extends StatefulWidget {
   final ESP32Service esp32Service;
@@ -41,7 +41,6 @@ class _ParentControlScreenState extends State<ParentControlScreen> {
     }
   }
 
-  // Update the menuItems list
   List<ParentMenuItem> get menuItems => [
     ParentMenuItem(
       title: AppLocalizations.get('parent_control.change_pin'),
@@ -60,18 +59,6 @@ class _ParentControlScreenState extends State<ParentControlScreen> {
       icon: Icons.menu_book,
       color: Color(0xFFFED766),
       screenBuilder: (context) => UsageGuideScreen(),
-    ),
-    ParentMenuItem(
-      title: AppLocalizations.get('parent_control.settings'),
-      icon: Icons.settings,
-      color: Color(0xFFA5D8FF),
-      screenBuilder: (context) => AppSettingsScreen(),
-    ),
-    ParentMenuItem(
-      title: AppLocalizations.get('parent_control.child_data'),
-      icon: Icons.people,
-      color: Color(0xFFC8A2C8),
-      screenBuilder: (context) => DataManagementScreen(),
     ),
     ParentMenuItem(
       title: AppLocalizations.get('parent_control.esp32_setup'),
@@ -130,7 +117,6 @@ class _ParentControlScreenState extends State<ParentControlScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          // Language Toggle Button
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [

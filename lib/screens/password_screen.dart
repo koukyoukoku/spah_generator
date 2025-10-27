@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:Eksplorasi/components/SmoothPress.dart';
 import 'package:Eksplorasi/utils/parent_control.dart';
+import 'package:Eksplorasi/models/languages/index.dart';
 
 class PasswordScreen extends StatefulWidget {
   final VoidCallback onSuccess;
@@ -24,9 +25,17 @@ class _PasswordScreenState extends State<PasswordScreen> {
   void initState() {
     super.initState();
     _pinFocusNode = FocusNode();
+    _initializeLanguage();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusScope.of(context).requestFocus(_pinFocusNode);
     });
+  }
+
+  void _initializeLanguage() async {
+    await AppLocalizations.init();
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -42,14 +51,14 @@ class _PasswordScreenState extends State<PasswordScreen> {
 
     if (_passwordController.text.isEmpty) {
       setState(() {
-        _errorMessage = 'Masukkan PIN';
+        _errorMessage = AppLocalizations.get('password_screen.enter_pin');
       });
       return;
     }
 
     if (_passwordController.text.length != 4) {
       setState(() {
-        _errorMessage = 'PIN harus 4 digit';
+        _errorMessage = AppLocalizations.get('password_screen.pin_length_error');
       });
       return;
     }
@@ -71,7 +80,7 @@ class _PasswordScreenState extends State<PasswordScreen> {
         widget.onSuccess();
       } else {
         setState(() {
-          _errorMessage = 'PIN salah! Coba lagi.';
+          _errorMessage = AppLocalizations.get('password_screen.incorrect_pin');
           _isLoading = false;
           _isVerifying = false;
         });
@@ -81,7 +90,7 @@ class _PasswordScreenState extends State<PasswordScreen> {
       if (!mounted) return;
       
       setState(() {
-        _errorMessage = 'Terjadi kesalahan. Coba lagi.';
+        _errorMessage = AppLocalizations.get('password_screen.error_occurred');
         _isLoading = false;
         _isVerifying = false;
       });
@@ -236,25 +245,13 @@ class _PasswordScreenState extends State<PasswordScreen> {
 
                         SizedBox(height: 30),
                         Text(
-                          'Kontrol Orang Tua',
+                          AppLocalizations.get('parent_control.title'),
                           style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFF2D5A7E),
                             fontFamily: 'ComicNeue',
                           ),
-                        ),
-
-                        SizedBox(height: 8),
-
-                        Text(
-                          'Masukkan PIN 4 digit untuk melanjutkan',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFF666666),
-                            fontFamily: 'ComicNeue',
-                          ),
-                          textAlign: TextAlign.center,
                         ),
 
                         SizedBox(height: 40),
