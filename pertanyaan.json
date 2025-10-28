@@ -82,22 +82,22 @@
     },
     "049876543210": {
       "uid": "049876543210",
-      "id": "Emboh cik",
-      "en": "mboph",
+      "id": "Tas",
+      "en": "Bag",
       "image": "assets/images/sdasd.png",
       "syllables": {
-        "id": ["asd", "asd"],
-        "en": ["asd"]
+        "id": ["Ta", "s"],
+        "en": ["Bag"]
       }
     },
     "04987654321s0": {
       "uid": "049876543210",
-      "id": "asdasd",
-      "en": "asdasd",
+      "id": "Ponsel",
+      "en": "Phone",
       "image": "assets/images/asdasd.png",
       "syllables": {
-        "id": ["asdasd", "asdasd"],
-        "en": ["asdasd"]
+        "id": ["Pon", "sel"],
+        "en": ["Phone"]
       }
     }
   }
