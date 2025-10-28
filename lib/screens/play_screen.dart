@@ -8,6 +8,7 @@ import 'package:Eksplorasi/components/SmoothPress.dart';
 import 'package:Eksplorasi/services/esp32_service.dart';
 import 'package:Eksplorasi/models/languages/index.dart';
 import 'package:Eksplorasi/utils/tts_service.dart';
+import 'package:Eksplorasi/services/firebase.dart';
 
 class PlayScreen extends StatefulWidget {
   @override
@@ -24,32 +25,13 @@ class _PlayScreenState extends State<PlayScreen>
   String _displayText = '';
   String _lastUID = "";
   String _currentObjectName = "";
+  
+  final FirebaseRealtimeDB _firebaseService = FirebaseRealtimeDB();
 
   late AnimationController _animationController;
   final ESP32Service _esp32Service = ESP32Service();
   StreamSubscription? _esp32DataSubscription;
   StreamSubscription? _esp32StatusSubscription;
-
-  final Map<String, Map<String, String>> _objectDictionary = {
-    'FEA4B889': {'id': 'Apel', 'en': 'Apple'},
-    '89AAE568': {'id': 'Pisang', 'en': 'Banana'},
-    '041234567890': {'id': 'Mobil', 'en': 'Car'},
-    '04ABCDEF1234': {'id': 'Bola', 'en': 'Ball'},
-    '04A1B2C3D4E5': {'id': 'Buku', 'en': 'Book'},
-    '04FEDCBA9876': {'id': 'Pensil', 'en': 'Pencil'},
-    '041A2B3C4D5E': {'id': 'Rumah', 'en': 'House'},
-    '045A4B3C2D1E': {'id': 'Pohon', 'en': 'Tree'},
-    '049876543210': {'id': 'Kucing', 'en': 'Cat'},
-    '041F2E3D4C5B': {'id': 'Anjing', 'en': 'Dog'},
-    '04C1D2E3F4A5': {'id': 'Meja', 'en': 'Table'},
-    '04B2A3C4D5E6': {'id': 'Kursi', 'en': 'Chair'},
-    '04D3E4F5A6B7': {'id': 'Topi', 'en': 'Hat'},
-    '04E5F6A7B8C9': {'id': 'Sepatu', 'en': 'Shoe'},
-    '04F7A8B9C0D1': {'id': 'Bunga', 'en': 'Flower'},
-    '04A5B6C7D8E9': {'id': 'Matahari', 'en': 'Sun'},
-    '04B7C8D9E0F1': {'id': 'Bulan', 'en': 'Moon'},
-    '04C9D0E1F2A3': {'id': 'Bintang', 'en': 'Star'},
-  };
 
   @override
   void initState() {
@@ -102,18 +84,7 @@ class _PlayScreenState extends State<PlayScreen>
       if (mounted) {
         setState(() {
           _status = status;
-          if (!status.contains('WiFi:') &&
-              !status.contains('Starting') &&
-              !status.contains('Scanning') &&
-              !status.contains('Connecting') &&
-              !status.contains('Re-scan') &&
-              !status.contains('No devices') &&
-              !status.contains('UDP Discovery') &&
-              !status.contains('Data:') &&
-              !status.contains('Status:') &&
-              !status.contains('Ping:')) {
-            _displayText = _getUserFriendlyStatus(status);
-          }
+          _displayText = _getUserFriendlyStatus(status);
         });
       }
     });
@@ -121,19 +92,8 @@ class _PlayScreenState extends State<PlayScreen>
     _esp32DataSubscription = _esp32Service.deviceDataStream.listen((data) {
       if (data.containsKey('rfid_uid') && _isReading) {
         String uid = data['rfid_uid'].toString();
-
         if (uid.isNotEmpty && uid.length >= 4) {
           _handleTagRead(uid);
-        } else {
-          setState(() {
-            _status = AppLocalizations.get('play_screen.invalid_card');
-            _displayText = AppLocalizations.get('play_screen.invalid_card');
-            _showSuccess = false;
-          });
-
-          if (_isReading) {
-            _animationController.repeat();
-          }
         }
       }
     });
@@ -143,23 +103,17 @@ class _PlayScreenState extends State<PlayScreen>
   }
 
   String _getUserFriendlyStatus(String status) {
-    if (status.contains('ESP32 Found')) {
-      return AppLocalizations.get('play_screen.esp32_found');
-    } else if (status.contains('Connected to ESP32')) {
-      return AppLocalizations.get('play_screen.esp32_connected');
-    } else if (status.contains('Handshake Success')) {
-      return AppLocalizations.get('play_screen.ready_to_scan');
-    } else if (status.contains('Kartu tidak dikenali') ||
-        status.contains('Card not recognized')) {
+    if (status.contains('ESP32 Found')) return AppLocalizations.get('play_screen.esp32_found');
+    if (status.contains('Connected to ESP32')) return AppLocalizations.get('play_screen.esp32_connected');
+    if (status.contains('Handshake Success')) return AppLocalizations.get('play_screen.ready_to_scan');
+    if (status.contains('Kartu tidak dikenali') || status.contains('Card not recognized')) {
       return AppLocalizations.get('play_screen.card_not_recognized');
-    } else if (status.contains('RFID Tidak Valid') ||
-        status.contains('Invalid card')) {
-      return AppLocalizations.get('play_screen.invalid_card');
-    } else if (status.contains('Connection Disconnected')) {
-      return AppLocalizations.get('play_screen.connection_lost');
-    } else if (status.contains('Failed to connect')) {
-      return AppLocalizations.get('play_screen.connection_failed');
     }
+    if (status.contains('RFID Tidak Valid') || status.contains('Invalid card')) {
+      return AppLocalizations.get('play_screen.invalid_card');
+    }
+    if (status.contains('Connection Disconnected')) return AppLocalizations.get('play_screen.connection_lost');
+    if (status.contains('Failed to connect')) return AppLocalizations.get('play_screen.connection_failed');
     return status;
   }
 
@@ -173,22 +127,16 @@ class _PlayScreenState extends State<PlayScreen>
           _displayText = AppLocalizations.get('play_screen.tap_nfc');
         });
         _startReading();
-      } else if (availability == NFCAvailability.disabled) {
+      } else {
         setState(() {
           _nfcAvailable = false;
           _status = AppLocalizations.get('play_screen.nfc_disabled');
           _displayText = AppLocalizations.get('play_screen.enable_nfc');
         });
-      } else if (availability == NFCAvailability.not_supported) {
-        setState(() {
-          _nfcAvailable = false;
-          _status = AppLocalizations.get('play_screen.nfc_not_supported');
-          _displayText = AppLocalizations.get('play_screen.nfc_not_supported');
-        });
       }
     } catch (e) {
       setState(() {
-        _status = "${AppLocalizations.get('play_screen.nfc_error')}: $e";
+        _status = AppLocalizations.get('play_screen.nfc_error');
         _displayText = AppLocalizations.get('play_screen.nfc_error');
       });
     }
@@ -197,20 +145,14 @@ class _PlayScreenState extends State<PlayScreen>
   void _startReading() {
     setState(() {
       _isReading = true;
-      _status = AppLocalizations.get('play_screen.starting_read');
-      _displayText = _useESP32Mode
+      _displayText = _useESP32Mode 
           ? AppLocalizations.get('play_screen.tap_rfid')
           : AppLocalizations.get('play_screen.tap_nfc');
       _showSuccess = false;
-      _lastUID = "";
-      _currentObjectName = "";
     });
-
     _animationController.repeat();
 
-    if (_useESP32Mode) {
-      _esp32Service.sendTCPMessage('START_RFID_READING');
-    } else {
+    if (!_useESP32Mode) {
       _readNfcContinuously();
     }
   }
@@ -220,152 +162,138 @@ class _PlayScreenState extends State<PlayScreen>
       try {
         final tag = await FlutterNfcKit.poll(
           timeout: Duration(seconds: 60),
-          iosMultipleTagMessage: AppLocalizations.get(
-            'play_screen.multiple_tags',
-          ),
+          iosMultipleTagMessage: AppLocalizations.get('play_screen.multiple_tags'),
           iosAlertMessage: AppLocalizations.get('play_screen.scan_object'),
         );
 
-        String tagId = '';
         if (tag.id.isNotEmpty) {
-          tagId = tag.id.toUpperCase();
+          _handleTagRead(tag.id.toUpperCase());
         }
-
-        if (tagId.isNotEmpty && tagId.length >= 4) {
-          _handleTagRead(tagId);
-        } else {
-          setState(() {
-            _status = AppLocalizations.get('play_screen.tag_not_recognized');
-            _displayText = AppLocalizations.get(
-              'play_screen.tag_not_recognized',
-            );
-            _showSuccess = false;
-          });
-          _animationController.repeat();
-        }
-
         await Future.delayed(Duration(seconds: 2));
-
-        if (mounted && _isReading) {
-          setState(() {
-            _status = AppLocalizations.get('play_screen.waiting_next');
-            _displayText = AppLocalizations.get('play_screen.tap_another');
-            _showSuccess = false;
-          });
-
-          _animationController.repeat();
-        }
       } catch (e) {
-        if (_isReading && mounted) {
-          setState(() {
-            _status = AppLocalizations.get('play_screen.error_try_again');
-            _displayText = AppLocalizations.get('play_screen.error_try_again');
-            _showSuccess = false;
-          });
-          await Future.delayed(Duration(seconds: 1));
-        }
+        await Future.delayed(Duration(seconds: 1));
       }
     }
   }
 
-  void _handleTagRead(String uid) {
-    if (uid.length < 4) {
+  void _handleTagRead(String uid) async {
+    if (uid.length < 4) return;
+
+    print('🟡 DEBUG: Starting _handleTagRead for UID: $uid');
+
+    try {
+      final objectData = await _getObjectFromFirebase(uid);
+      print('🟡 DEBUG: Object data received: $objectData');
+
+      if (objectData != null && objectData.isNotEmpty) {
+        final objectName = _getObjectName(objectData);
+        print('🟡 DEBUG: Object name extracted: $objectName');
+        setState(() {
+          _displayText = objectName;
+          _lastUID = uid;
+          _currentObjectName = objectName;
+          _showSuccess = true;
+        });
+
+        _animationController.stop();
+        _saveScanResult(uid);
+
+        Future.delayed(Duration(milliseconds: 1500), () {
+          if (mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ObjectDetailScreen(
+                  objectName: objectName,
+                  objectId: uid,
+                  isEnglish: AppLocalizations.current?.currentLanguageCode == 'en',
+                  objectData: objectData,
+                ),
+              ),
+            );
+          }
+        });
+      } else {
+        print('🔴 DEBUG: Object data is NULL or EMPTY for UID: $uid');
+        setState(() {
+          _displayText = AppLocalizations.get('play_screen.unknown_object');
+          _showSuccess = false;
+        });
+      }
+    } catch (e) {
+      print('🔴 DEBUG: Error in _handleTagRead: $e');
       setState(() {
-        _status = AppLocalizations.get('play_screen.invalid_card');
-        _displayText = AppLocalizations.get('play_screen.invalid_card');
+        _displayText = AppLocalizations.get('play_screen.error_try_again');
         _showSuccess = false;
       });
-      return;
     }
+  }
 
-    String objectName = _getObjectName(uid);
+  Future<Map<String, dynamic>?> _getObjectFromFirebase(String uid) async {
+    try {
+      final normalizedUID = uid.toUpperCase().replaceAll(' ', '');
+      print('🟡 DEBUG: Fetching from Firebase for UID: $normalizedUID');
+      
+      final objectData = await _firebaseService.getData('objects/$normalizedUID');
+      print('🟡 DEBUG: Raw data from Firebase: $objectData');
+      
+      return objectData;
+    } catch (e) {
+      print('🔴 DEBUG: Firebase error: $e');
+      return null;
+    }
+  }
 
-    setState(() {
-      _status =
-          "${AppLocalizations.get('play_screen.object_recognized')}: $objectName";
-      _displayText = objectName;
-      _lastUID = uid;
-      _currentObjectName = objectName;
-      _showSuccess = true;
-    });
-
-    _animationController.stop();
-
-    _saveScanResult(uid);
-
-    Future.delayed(Duration(milliseconds: 1500), () {
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ObjectDetailScreen(
-              objectName: objectName,
-              objectId: uid,
-              isEnglish: AppLocalizations.current?.currentLanguageCode == 'en',
-            ),
-          ),
-        );
+  String _getObjectName(Map<String, dynamic> objectData) {
+    try {
+      final currentLanguage = AppLocalizations.current?.currentLanguageCode ?? 'id';
+      final languageKey = currentLanguage == 'en' ? 'en' : 'id';
+      
+      print('🟡 DEBUG: Current language: $currentLanguage, looking for key: $languageKey');
+      print('🟡 DEBUG: Available keys in objectData: ${objectData.keys}');
+      
+      if (objectData.containsKey(languageKey)) {
+        final name = objectData[languageKey]?.toString();
+        print('🟡 DEBUG: Found object name: $name');
+        return name ?? AppLocalizations.get('play_screen.unknown_object');
+      } else {
+        print('🔴 DEBUG: Language key "$languageKey" not found in object data');
+        return AppLocalizations.get('play_screen.unknown_object');
       }
-    });
-  }
-
-  String _getObjectName(String uid) {
-    String normalizedUID = uid.toUpperCase().replaceAll(' ', '');
-
-    if (_objectDictionary.containsKey(normalizedUID)) {
-      String currentLanguage =
-          AppLocalizations.current?.currentLanguageCode ?? 'id';
-      return _objectDictionary[normalizedUID]![currentLanguage] ??
-          AppLocalizations.get('play_screen.unknown_object');
-    }
-
-    return AppLocalizations.get('play_screen.unknown_object');
-  }
-
-  void _speakObjectName() async {
-    if (_currentObjectName.isNotEmpty) {
-      String currentLanguage =
-          AppLocalizations.current?.currentLanguageCode ?? 'id';
-      await TTSService.setLanguage(currentLanguage);
-      await TTSService.speak(_currentObjectName);
+    } catch (e) {
+      print('🔴 DEBUG: Error in _getObjectName: $e');
+      return AppLocalizations.get('play_screen.unknown_object');
     }
   }
 
   Future<void> _saveScanResult(String uid) async {
-    if (uid.length < 4) {
-      return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final history = prefs.getStringList('scan_history') ?? [];
+      
+      history.add(json.encode({
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'uid': uid,
+        'object_name': _currentObjectName,
+        'mode': _useESP32Mode ? 'ESP32' : 'NFC',
+      }));
+
+      if (history.length > 100) history.removeAt(0);
+      await prefs.setStringList('scan_history', history);
+      
+      print('✅ Scan result saved: $uid - $_currentObjectName');
+    } catch (e) {
+      print('🔴 Save error: $e');
     }
-
-    final prefs = await SharedPreferences.getInstance();
-    final now = DateTime.now();
-    final scanResult = {
-      'timestamp': now.millisecondsSinceEpoch,
-      'uid': uid,
-      'object_name': _currentObjectName,
-      'mode': _useESP32Mode ? 'ESP32' : 'NFC',
-    };
-
-    final history = prefs.getStringList('scan_history') ?? [];
-    history.add(json.encode(scanResult));
-
-    if (history.length > 100) {
-      history.removeAt(0);
-    }
-
-    await prefs.setStringList('scan_history', history);
-
-    print('✅ RFID UID Disimpan: $uid - $_currentObjectName');
   }
 
   void _stopReadingAndExit() {
     setState(() {
       _isReading = false;
-      _status = AppLocalizations.get('play_screen.stopping');
       _displayText = AppLocalizations.get('play_screen.stopping');
     });
 
     _animationController.stop();
-
     TTSService.stop();
 
     if (_useESP32Mode) {
@@ -374,25 +302,21 @@ class _PlayScreenState extends State<PlayScreen>
       FlutterNfcKit.finish();
     }
 
-    if (mounted) {
-      Navigator.pop(context);
-    }
+    if (mounted) Navigator.pop(context);
   }
 
   @override
   void dispose() {
     _isReading = false;
     _animationController.dispose();
-
     TTSService.stop();
-
+    
     if (_useESP32Mode) {
       _esp32DataSubscription?.cancel();
       _esp32StatusSubscription?.cancel();
     } else {
       FlutterNfcKit.finish();
     }
-
     super.dispose();
   }
 

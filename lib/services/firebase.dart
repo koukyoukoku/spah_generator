@@ -11,29 +11,36 @@ class FirebaseRealtimeDB {
     ).ref();
   }
 
-  Future<void> saveData(String path, Map<String, dynamic> data) async {
-    try {
-      await _database.child(path).set(data);
-      print('Data saved successfully at path: $path');
-    } catch (e) {
-      print('Error saving data: $e');
-      throw Exception('Failed to save data: $e');
-    }
-  }
-
   Future<Map<String, dynamic>?> getData(String path) async {
     try {
       final snapshot = await _database.child(path).get();
       if (snapshot.exists) {
-        print('Data retrieved successfully from path: $path');
-        return Map<String, dynamic>.from(
-            snapshot.value as Map<dynamic, dynamic>);
+        print('✅ Data retrieved from path: $path');
+        
+        final Map<String, dynamic> result = {};
+        final data = snapshot.value;
+        
+        if (data is Map) {
+          data.forEach((key, value) {
+            result[key.toString()] = value;
+          });
+          return result;
+        }
       }
-      print('No data found at path: $path');
+      print('ℹ️ No data found at path: $path');
       return null;
     } catch (e) {
-      print('Error getting data: $e');
-      throw Exception('Failed to get data: $e');
+      print('❌ Error getting data: $e');
+      return null;
+    }
+  }
+
+  Future<void> saveData(String path, Map<String, dynamic> data) async {
+    try {
+      await _database.child(path).set(data);
+      print('✅ Data saved at path: $path');
+    } catch (e) {
+      print('❌ Error saving data: $e');
     }
   }
 
@@ -44,20 +51,18 @@ class FirebaseRealtimeDB {
   Future<void> updateData(String path, Map<String, dynamic> data) async {
     try {
       await _database.child(path).update(data);
-      print('Data updated successfully at path: $path');
+      print('✅ Data updated at path: $path');
     } catch (e) {
-      print('Error updating data: $e');
-      throw Exception('Failed to update data: $e');
+      print('❌ Error updating data: $e');
     }
   }
 
   Future<void> deleteData(String path) async {
     try {
       await _database.child(path).remove();
-      print('Data deleted successfully at path: $path');
+      print('✅ Data deleted at path: $path');
     } catch (e) {
-      print('Error deleting data: $e');
-      throw Exception('Failed to delete data: $e');
+      print('❌ Error deleting data: $e');
     }
   }
 }

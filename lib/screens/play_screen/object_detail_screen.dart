@@ -6,12 +6,14 @@ class ObjectDetailScreen extends StatefulWidget {
   final String objectName;
   final String objectId;
   final bool isEnglish;
+  final Map<String, dynamic>? objectData;
 
   const ObjectDetailScreen({
     Key? key,
     required this.objectName,
     required this.objectId,
     required this.isEnglish,
+    this.objectData,
   }) : super(key: key);
 
   @override
@@ -25,71 +27,6 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> with SingleTick
   bool _isPlaying = false;
   List<String> _spellingSteps = [];
   List<List<int>> _syllableRanges = [];
-
-  final Map<String, String> _objectImages = {
-    'Apple': 'assets/images/apple.png',
-    'Apel': 'assets/images/apple.png',
-    'Banana': 'assets/images/banana.png',
-    'Pisang': 'assets/images/banana.png',
-    'Car': 'assets/images/car.png',
-    'Mobil': 'assets/images/car.png',
-    'Ball': 'assets/images/ball.png',
-    'Bola': 'assets/images/ball.png',
-    'Book': 'assets/images/book.png',
-    'Buku': 'assets/images/book.png',
-    'Pencil': 'assets/images/pencil.png',
-    'Pensil': 'assets/images/pencil.png',
-    'House': 'assets/images/house.png',
-    'Rumah': 'assets/images/house.png',
-    'Tree': 'assets/images/tree.png',
-    'Pohon': 'assets/images/tree.png',
-    'Cat': 'assets/images/cat.png',
-    'Kucing': 'assets/images/cat.png',
-    'Dog': 'assets/images/dog.png',
-    'Anjing': 'assets/images/dog.png',
-  };
-
-  final Map<String, List<String>> _englishSyllables = {
-    'Apple': ['A', 'Pple'],
-    'Banana': ['Ba', 'na', 'na'],
-    'Car': ['Car'],
-    'Ball': ['Ball'],
-    'Book': ['Book'],
-    'Pencil': ['Pen', 'cil'],
-    'House': ['House'],
-    'Tree': ['Tree'],
-    'Cat': ['Cat'],
-    'Dog': ['Dog'],
-    'Table': ['Ta', 'ble'],
-    'Chair': ['Chair'],
-    'Hat': ['Hat'],
-    'Shoe': ['Shoe'],
-    'Flower': ['Flow', 'er'],
-    'Sun': ['Sun'],
-    'Moon': ['Moon'],
-    'Star': ['Star'],
-  };
-
-  final Map<String, List<String>> _indonesianSyllables = {
-    'Apel': ['A', 'pel'],
-    'Pisang': ['Pi', 'sang'],
-    'Mobil': ['Mo', 'bil'],
-    'Bola': ['Bo', 'la'],
-    'Buku': ['Bu', 'ku'],
-    'Pensil': ['Pen', 'sil'],
-    'Rumah': ['Ru', 'mah'],
-    'Pohon': ['Po', 'hon'],
-    'Kucing': ['Ku', 'cing'],
-    'Anjing': ['An', 'jing'],
-    'Meja': ['Me', 'ja'],
-    'Kursi': ['Kur', 'si'],
-    'Topi': ['To', 'pi'],
-    'Sepatu': ['Se', 'pa', 'tu'],
-    'Bunga': ['Bu', 'nga'],
-    'Matahari': ['Ma', 'ta', 'ha', 'ri'],
-    'Bulan': ['Bu', 'lan'],
-    'Bintang': ['Bin', 'tang'],
-  };
 
   @override
   void initState() {
@@ -113,20 +50,71 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> with SingleTick
     String name = widget.objectName;
     List<String> syllables = [];
     
-    if (widget.isEnglish) {
-      syllables = _englishSyllables[name] ?? _splitIntoSyllables(name, widget.isEnglish);
+    if (widget.objectData != null && widget.objectData!['syllables'] != null) {
+      final syllablesData = widget.objectData!['syllables'];
+      String languageKey = widget.isEnglish ? 'en' : 'id';
+      
+      print('🔍 Syllables data: $syllablesData');
+      print('🔍 Language key: $languageKey');
+      
+      if (syllablesData.containsKey(languageKey)) {
+        syllables = List<String>.from(syllablesData[languageKey]);
+        print('✅ Using Firebase syllables: $syllables');
+      } else {
+        syllables = _getFallbackSyllables(name, widget.isEnglish);
+        print('⚠️ Using fallback syllables: $syllables');
+      }
     } else {
-      syllables = _indonesianSyllables[name] ?? _splitIntoSyllables(name, widget.isEnglish);
+      syllables = _getFallbackSyllables(name, widget.isEnglish);
+      print('⚠️ No syllables data, using fallback: $syllables');
     }
 
     _syllableRanges = _calculateSyllableRanges(name, syllables);
+    
     _spellingSteps = [name];
     _spellingSteps.addAll(syllables);
     _spellingSteps.add(name);
-    _spellingSteps.add(name);
+    
+    print('📝 Spelling steps: $_spellingSteps');
+  }
+
+  List<String> _getFallbackSyllables(String word, bool isEnglish) {
+    final Map<String, List<String>> englishSyllables = {
+      'Apple': ['A', 'pple'],
+      'Banana': ['Ba', 'na', 'na'],
+      'Car': ['Car'],
+      'Ball': ['Ball'],
+      'Book': ['Book'],
+      'Pencil': ['Pen', 'cil'],
+      'House': ['House'],
+      'Tree': ['Tree'],
+      'Cat': ['Cat'],
+      'Dog': ['Dog'],
+    };
+
+    final Map<String, List<String>> indonesianSyllables = {
+      'Apel': ['A', 'pel'],
+      'Pisang': ['Pi', 'sang'],
+      'Mobil': ['Mo', 'bil'],
+      'Bola': ['Bo', 'la'],
+      'Buku': ['Bu', 'ku'],
+      'Pensil': ['Pen', 'sil'],
+      'Rumah': ['Ru', 'mah'],
+      'Pohon': ['Po', 'hon'],
+      'Kucing': ['Ku', 'cing'],
+      'Anjing': ['An', 'jing'],
+    };
+
+    if (isEnglish) {
+      return englishSyllables[word] ?? _splitIntoSyllables(word, isEnglish);
+    } else {
+      return indonesianSyllables[word] ?? _splitIntoSyllables(word, isEnglish);
+    }
   }
 
   List<String> _splitIntoSyllables(String word, bool isEnglish) {
+    if (word.length <= 3) return [word];
+    
     List<String> syllables = [];
     String currentSyllable = '';
     
@@ -144,7 +132,7 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> with SingleTick
           }
         }
       } else {
-        if (currentSyllable.length >= 2 || i == word.length - 1) {
+        if (currentSyllable.length >= 2 && i < word.length - 1) {
           syllables.add(currentSyllable);
           currentSyllable = '';
         }
@@ -188,7 +176,10 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> with SingleTick
       });
 
       _animationController.forward(from: 0);
-      await _speakWithDelay(_spellingSteps[i]);
+      
+      await Future.delayed(Duration(milliseconds: 300));
+      
+      await _speakSyllable(_spellingSteps[i], i);
       _animationController.reverse();
       
       if (i < _spellingSteps.length - 1) {
@@ -203,21 +194,31 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> with SingleTick
     }
   }
 
-  Future<void> _speakWithDelay(String text) async {
-    if (TTSService.isAvailable) {
-      String currentLanguage = widget.isEnglish ? 'en' : 'id';
-      await TTSService.setLanguage(currentLanguage);
-      await TTSService.speak(text);
-    }
+  Future<void> _speakSyllable(String text, int stepIndex) async {
+    if (!TTSService.isAvailable) return;
 
-    int delay = text.length * 300 + 500;
-    await Future.delayed(Duration(milliseconds: delay));
+    String currentLanguage = widget.isEnglish ? 'en' : 'id';
+    await TTSService.setLanguage(currentLanguage);
+    
+    print('🗣️ Speaking ($currentLanguage): "$text" at step $stepIndex');
+    
+    if (stepIndex > 0 && stepIndex < _spellingSteps.length - 1) {
+      await TTSService.speak(text);
+      
+      int delay = text.length * 400 + 600;
+      await Future.delayed(Duration(milliseconds: delay));
+    } else {
+      await TTSService.speak(text);
+      
+      int delay = text.length * 300 + 1000;
+      await Future.delayed(Duration(milliseconds: delay));
+    }
   }
 
   Widget _buildSyllableHighlight() {
     String fullWord = widget.objectName;
     
-    if (_currentStep == 0 || _currentStep >= _spellingSteps.length - 2) {
+    if (_currentStep == 0 || _currentStep >= _spellingSteps.length - 1) {
       return _buildHighlightedText(fullWord, 0, fullWord.length);
     } else {
       int syllableIndex = _currentStep - 1;
@@ -296,7 +297,7 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> with SingleTick
   String _getStepDescription() {
     if (_currentStep == 0) {
       return widget.isEnglish ? "Say the word" : "Ucapkan kata";
-    } else if (_currentStep >= _spellingSteps.length - 2) {
+    } else if (_currentStep >= _spellingSteps.length - 1) {
       return widget.isEnglish ? "Say it again!" : "Ulangi kata!";
     } else {
       int syllableNumber = _currentStep;
@@ -309,16 +310,63 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> with SingleTick
   String _getCurrentSyllableText() {
     if (_currentStep == 0) {
       return widget.objectName;
-    } else if (_currentStep >= _spellingSteps.length - 2) {
+    } else if (_currentStep >= _spellingSteps.length - 1) {
       return widget.objectName;
     } else {
       return _spellingSteps[_currentStep];
     }
   }
 
+  String _getImagePath() {
+    if (widget.objectData != null && widget.objectData!['image'] != null) {
+      return widget.objectData!['image'].toString();
+    }
+    
+    final Map<String, String> fallbackImages = {
+      'Apple': 'assets/images/apple.png',
+      'Apel': 'assets/images/apple.png',
+      'Banana': 'assets/images/banana.png',
+      'Pisang': 'assets/images/banana.png',
+      'Car': 'assets/images/car.png',
+      'Mobil': 'assets/images/car.png',
+      'Ball': 'assets/images/ball.png',
+      'Bola': 'assets/images/ball.png',
+      'Book': 'assets/images/book.png',
+      'Buku': 'assets/images/book.png',
+      'Pencil': 'assets/images/pencil.png',
+      'Pensil': 'assets/images/pencil.png',
+      'House': 'assets/images/house.png',
+      'Rumah': 'assets/images/house.png',
+      'Tree': 'assets/images/tree.png',
+      'Pohon': 'assets/images/tree.png',
+      'Cat': 'assets/images/cat.png',
+      'Kucing': 'assets/images/cat.png',
+      'Dog': 'assets/images/dog.png',
+      'Anjing': 'assets/images/dog.png',
+      'Table': 'assets/images/table.png',
+      'Meja': 'assets/images/table.png',
+      'Chair': 'assets/images/chair.png',
+      'Kursi': 'assets/images/chair.png',
+      'Hat': 'assets/images/hat.png',
+      'Topi': 'assets/images/hat.png',
+      'Shoe': 'assets/images/shoe.png',
+      'Sepatu': 'assets/images/shoe.png',
+      'Flower': 'assets/images/flower.png',
+      'Bunga': 'assets/images/flower.png',
+      'Sun': 'assets/images/sun.png',
+      'Matahari': 'assets/images/sun.png',
+      'Moon': 'assets/images/moon.png',
+      'Bulan': 'assets/images/moon.png',
+      'Star': 'assets/images/star.png',
+      'Bintang': 'assets/images/star.png',
+    };
+    
+    return fallbackImages[widget.objectName] ?? 'assets/images/placeholder.png';
+  }
+
   @override
   Widget build(BuildContext context) {
-    String imagePath = _objectImages[widget.objectName] ?? 'assets/images/placeholder.png';
+    String imagePath = _getImagePath();
 
     return Scaffold(
       backgroundColor: Color(0xFFE8F4F8),

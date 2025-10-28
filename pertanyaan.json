@@ -1,0 +1,104 @@
+{
+  "objects": {
+    "FEA4B889": {
+      "uid": "FEA4B889",
+      "id": "Meja",
+      "en": "Table",
+      "image": "assets/images/table.png",
+      "syllables": {
+        "id": ["Me", "Ja"],
+        "en": ["Ta", "Ble"]
+      }
+    },
+    "89AAE568": {
+      "uid": "89AAE568",
+      "id": "Lemari",
+      "en": "Wardrobe",
+      "image": "assets/images/wardrobe.png",
+      "syllables": {
+        "id": ["Le", "Ma", "Ri"],
+        "en": ["War", "Drobe"]
+      }
+    },
+    "189A3533FEE70D": {
+      "uid": "189A3533FEE70D",
+      "id": "Kursi",
+      "en": "Chair",
+      "image": "assets/images/chair.png",
+      "syllables": {
+        "id": ["Kur", "Si"],
+        "en": ["Chair"]
+      }
+    },
+    "04ABCDEF1234": {
+      "uid": "04ABCDEF1234",
+      "id": "Pintu",
+      "en": "Door",
+      "image": "assets/images/pintu.png",
+      "syllables": {
+        "id": ["Pin", "Tu"],
+        "en": ["Door"]
+      }
+    },
+    "04A1B2C3D4E5": {
+      "uid": "04A1B2C3D4E5",
+      "id": "Buku",
+      "en": "Book",
+      "image": "assets/images/book.png",
+      "syllables": {
+        "id": ["Bu", "ku"],
+        "en": ["Book"]
+      }
+    },
+    "04FEDCBA9876": {
+      "uid": "04FEDCBA9876",
+      "id": "Pensil",
+      "en": "Pencil",
+      "image": "assets/images/pencil.png",
+      "syllables": {
+        "id": ["Pen", "sil"],
+        "en": ["Pen", "cil"]
+      }
+    },
+    "041A2B3C4D5E": {
+      "uid": "041A2B3C4D5E",
+      "id": "Rumah",
+      "en": "House",
+      "image": "assets/images/house.png",
+      "syllables": {
+        "id": ["Ru", "mah"],
+        "en": ["House"]
+      }
+    },
+    "045A4B3C2D1E": {
+      "uid": "045A4B3C2D1E",
+      "id": "Pohon",
+      "en": "Tree",
+      "image": "assets/images/tree.png",
+      "syllables": {
+        "id": ["Po", "hon"],
+        "en": ["Tree"]
+      }
+    },
+    "049876543210": {
+      "uid": "049876543210",
+      "id": "Emboh cik",
+      "en": "mboph",
+      "image": "assets/images/sdasd.png",
+      "syllables": {
+        "id": ["asd", "asd"],
+        "en": ["asd"]
+      }
+    },
+    "04987654321s0": {
+      "uid": "049876543210",
+      "id": "asdasd",
+      "en": "asdasd",
+      "image": "assets/images/asdasd.png",
+      "syllables": {
+        "id": ["asdasd", "asdasd"],
+        "en": ["asdasd"]
+      }
+    }
+  }
+}
