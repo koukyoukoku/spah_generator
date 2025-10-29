@@ -1,104 +1,280 @@
 {
   "objects": {
     "FEA4B889": {
-      "uid": "FEA4B889",
-      "id": "Meja",
       "en": "Table",
-      "image": "assets/images/table.png",
+      "id": "Meja",
+      "image": "images/meja.png",
+      "quiz": {
+        "en": {
+          "options_type": {
+            "image_type": {
+              "question": "What is the correct image of Table?",
+              "answers": [
+                { "images": "images/meja.png", "value": "Table" },
+                { "images": "images/kursi.png", "value": "Chair" },
+                { "images": "images/pintu.png", "value": "Door" },
+                { "images": "images/buku.png", "value": "Book" }
+              ]
+            },
+            "text_type": {
+              "question": "which is the correct spelling?",
+              "answers": ["Belte", "eTebal", "Teibel", "Table"]
+            }
+          }
+        },
+        "id": {
+          "options_type": {
+            "image_type": {
+              "question": "Manakah gambar Meja yang benar?",
+              "answers": [
+                { "images": "images/meja.png", "value": "Meja" },
+                { "images": "images/kursi.png", "value": "Kursi" },
+                { "images": "images/pintu.png", "value": "Pintu" },
+                { "images": "images/buku.png", "value": "Buku" }
+              ]
+            },
+            "text_type": {
+              "question": "Manakah tulisan yang benar?",
+              "answers": ["Belte", "eTebal", "Teibel", "Table"]
+            }
+          }
+        }
+      },
       "syllables": {
-        "id": ["Me", "Ja"],
-        "en": ["Ta", "Ble"]
-      }
+        "en": ["Ta", "Ble"],
+        "id": ["Me", "Ja"]
+      },
+      "uid": "FEA4B889"
     },
     "89AAE568": {
-      "uid": "89AAE568",
-      "id": "Lemari",
       "en": "Wardrobe",
-      "image": "assets/images/wardrobe.png",
+      "id": "Lemari",
+      "image": "images/lemari.png",
+      "quiz": {
+        "en": {
+          "options_type": {
+            "image_type": {
+              "question": "What is the correct image of Wardrobe?",
+              "answers": [
+                { "images": "images/lemari.png", "value": "Wardrobe" },
+                { "images": "images/kursi.png", "value": "Chair" },
+                { "images": "images/buku.png", "value": "Book" },
+                { "images": "images/meja.png", "value": "Table" }
+              ]
+            },
+            "text_type": {
+              "question": "which is the correct spelling?",
+              "answers": ["Wardrobe", "Wadroob", "Warbrobe", "Wardrob"]
+            }
+          }
+        },
+        "id": {
+          "options_type": {
+            "image_type": {
+              "question": "Manakah gambar Lemari yang benar?",
+              "answers": [
+                { "images": "images/lemari.png", "value": "Lemari" },
+                { "images": "images/meja.png", "value": "Meja" },
+                { "images": "images/buku.png", "value": "Buku" },
+                { "images": "images/rumah.png", "value": "Rumah" }
+              ]
+            },
+            "text_type": {
+              "question": "Manakah tulisan yang benar?",
+              "answers": ["Lemari", "Rimal", "Lemaari", "Lerami"]
+            }
+          }
+        }
+      },
       "syllables": {
-        "id": ["Le", "Ma", "Ri"],
-        "en": ["War", "Drobe"]
-      }
+        "en": ["War", "Drobe"],
+        "id": ["Le", "Ma", "Ri"]
+      },
+      "uid": "89AAE568"
     },
     "189A3533FEE70D": {
-      "uid": "189A3533FEE70D",
-      "id": "Kursi",
       "en": "Chair",
-      "image": "assets/images/chair.png",
+      "id": "Kursi",
+      "image": "images/kursi.png",
+      "quiz": {
+        "en": {
+          "options_type": {
+            "image_type": {
+              "question": "What is the correct image of Chair?",
+              "answers": [
+                { "images": "images/kursi.png", "value": "Chair" },
+                { "images": "images/meja.png", "value": "Table" },
+                { "images": "images/pintu.png", "value": "Door" },
+                { "images": "images/buku.png", "value": "Book" }
+              ]
+            },
+            "text_type": {
+              "question": "which is the correct spelling?",
+              "answers": ["Chair", "Cheir", "Chir", "Cahir"]
+            }
+          }
+        },
+        "id": {
+          "options_type": {
+            "image_type": {
+              "question": "Manakah gambar Kursi yang benar?",
+              "answers": [
+                { "images": "images/kursi.png", "value": "Kursi" },
+                { "images": "images/meja.png", "value": "Meja" },
+                { "images": "images/pintu.png", "value": "Pintu" },
+                { "images": "images/lemari.png", "value": "Lemari" }
+              ]
+            },
+            "text_type": {
+              "question": "Manakah tulisan yang benar?",
+              "answers": ["Kursi", "Kusrri", "Kurshi", "Krsui"]
+            }
+          }
+        }
+      },
       "syllables": {
-        "id": ["Kur", "Si"],
-        "en": ["Chair"]
-      }
+        "en": ["Chair"],
+        "id": ["Kur", "Si"]
+      },
+      "uid": "189A3533FEE70D"
     },
     "04ABCDEF1234": {
-      "uid": "04ABCDEF1234",
-      "id": "Pintu",
       "en": "Door",
-      "image": "assets/images/pintu.png",
+      "id": "Pintu",
+      "image": "images/pintu.png",
+      "quiz": {
+        "en": {
+          "options_type": {
+            "image_type": {
+              "question": "What is the correct image of Door?",
+              "answers": [
+                { "images": "images/pintu.png", "value": "Door" },
+                { "images": "images/jendela.png", "value": "Window" },
+                { "images": "images/rumah.png", "value": "House" },
+                { "images": "images/meja.png", "value": "Table" }
+              ]
+            },
+            "text_type": {
+              "question": "which is the correct spelling?",
+              "answers": ["Door", "Dorr", "Dor", "Doar"]
+            }
+          }
+        },
+        "id": {
+          "options_type": {
+            "image_type": {
+              "question": "Manakah gambar Pintu yang benar?",
+              "answers": [
+                { "images": "images/pintu.png", "value": "Pintu" },
+                { "images": "images/rumah.png", "value": "Rumah" },
+                { "images": "images/kursi.png", "value": "Kursi" },
+                { "images": "images/meja.png", "value": "Meja" }
+              ]
+            },
+            "text_type": {
+              "question": "Manakah tulisan yang benar?",
+              "answers": ["Pintu", "Pintoe", "Pintuu", "Pintuh"]
+            }
+          }
+        }
+      },
       "syllables": {
-        "id": ["Pin", "Tu"],
-        "en": ["Door"]
-      }
-    },
-    "04A1B2C3D4E5": {
-      "uid": "04A1B2C3D4E5",
-      "id": "Buku",
-      "en": "Book",
-      "image": "assets/images/book.png",
-      "syllables": {
-        "id": ["Bu", "ku"],
-        "en": ["Book"]
-      }
+        "en": ["Door"],
+        "id": ["Pin", "Tu"]
+      },
+      "uid": "04ABCDEF1234"
     },
     "04FEDCBA9876": {
-      "uid": "04FEDCBA9876",
-      "id": "Pensil",
       "en": "Pencil",
-      "image": "assets/images/pencil.png",
+      "id": "Pensil",
+      "image": "images/pensil.png",
+      "quiz": {
+        "en": {
+          "options_type": {
+            "image_type": {
+              "question": "What is the correct image of Pencil?",
+              "answers": [
+                { "images": "images/pensil.png", "value": "Pencil" },
+                { "images": "images/buku.png", "value": "Book" },
+                { "images": "images/tas.png", "value": "Bag" },
+                { "images": "images/meja.png", "value": "Table" }
+              ]
+            },
+            "text_type": {
+              "question": "which is the correct spelling?",
+              "answers": ["Pencil", "Pensyl", "Pencel", "Pensil"]
+            }
+          }
+        },
+        "id": {
+          "options_type": {
+            "image_type": {
+              "question": "Manakah gambar Pensil yang benar?",
+              "answers": [
+                { "images": "images/pensil.png", "value": "Pensil" },
+                { "images": "images/buku.png", "value": "Buku" },
+                { "images": "images/meja.png", "value": "Meja" },
+                { "images": "images/tas.png", "value": "Tas" }
+              ]
+            },
+            "text_type": {
+              "question": "Manakah tulisan yang benar?",
+              "answers": ["Pensil", "Penil", "Pencil", "Penzil"]
+            }
+          }
+        }
+      },
       "syllables": {
-        "id": ["Pen", "sil"],
-        "en": ["Pen", "cil"]
-      }
+        "en": ["Pen", "cil"],
+        "id": ["Pen", "sil"]
+      },
+      "uid": "04FEDCBA9876"
     },
     "041A2B3C4D5E": {
-      "uid": "041A2B3C4D5E",
-      "id": "Rumah",
       "en": "House",
-      "image": "assets/images/house.png",
+      "id": "Rumah",
+      "image": "images/rumah.png",
+      "quiz": {
+        "en": {
+          "options_type": {
+            "image_type": {
+              "question": "What is the correct image of House?",
+              "answers": [
+                { "images": "images/rumah.png", "value": "House" },
+                { "images": "images/pohon.png", "value": "Tree" },
+                { "images": "images/pintu.png", "value": "Door" },
+                { "images": "images/tas.png", "value": "Bag" }
+              ]
+            },
+            "text_type": {
+              "question": "which is the correct spelling?",
+              "answers": ["House", "Houce", "Hause", "Hous"]
+            }
+          }
+        },
+        "id": {
+          "options_type": {
+            "image_type": {
+              "question": "Manakah gambar Rumah yang benar?",
+              "answers": [
+                { "images": "images/rumah.png", "value": "Rumah" },
+                { "images": "images/pohon.png", "value": "Pohon" },
+                { "images": "images/pintu.png", "value": "Pintu" },
+                { "images": "images/tas.png", "value": "Tas" }
+              ]
+            },
+            "text_type": {
+              "question": "Manakah tulisan yang benar?",
+              "answers": ["Rumah", "Ruma", "Rmahu", "Rumhah"]
+            }
+          }
+        }
+      },
       "syllables": {
-        "id": ["Ru", "mah"],
-        "en": ["House"]
-      }
-    },
-    "045A4B3C2D1E": {
-      "uid": "045A4B3C2D1E",
-      "id": "Pohon",
-      "en": "Tree",
-      "image": "assets/images/tree.png",
-      "syllables": {
-        "id": ["Po", "hon"],
-        "en": ["Tree"]
-      }
-    },
-    "049876543210": {
-      "uid": "049876543210",
-      "id": "Tas",
-      "en": "Bag",
-      "image": "assets/images/sdasd.png",
-      "syllables": {
-        "id": ["Ta", "s"],
-        "en": ["Bag"]
-      }
-    },
-    "04987654321s0": {
-      "uid": "049876543210",
-      "id": "Ponsel",
-      "en": "Phone",
-      "image": "assets/images/asdasd.png",
-      "syllables": {
-        "id": ["Pon", "sel"],
-        "en": ["Phone"]
-      }
+        "en": ["House"],
+        "id": ["Ru", "mah"]
+      },
+      "uid": "041A2B3C4D5E"
     }
   }
 }

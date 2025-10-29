@@ -18,16 +18,20 @@ class FSRS {
   ];
 
   final List<double> w;
+  final Random _random;
 
-  FSRS({List<double>? parameters}) : w = parameters ?? defaultParameters;
+  FSRS({List<double>? parameters, Random? random})
+      : w = parameters ?? defaultParameters,
+        _random = random ?? Random();
 
   // Create a new card with initial state
   FSRSCard createCard() {
+    final now = DateTime.now();
     return FSRSCard(
       difficulty: w[0],
       stability: w[1],
-      lastReview: DateTime.now(),
-      dueDate: DateTime.now(),
+      lastReview: now,
+      dueDate: now,
       reviewCount: 0,
       lapseCount: 0,
       elapsedDays: 0,
@@ -39,9 +43,9 @@ class FSRS {
   // Main review function based on FSRS algorithm
   FSRSCardReview reviewCard(FSRSCard card, FSRSPerformance performance) {
     final now = DateTime.now();
-    final double elapsedDays = max(0.0, (now.difference(card.lastReview).inSeconds / 86400)).toDouble();
+    final double elapsedDays = max(0.1, (now.difference(card.lastReview).inSeconds / 86400)).toDouble();
     
-    if (card.state == CardState.newCard) {
+    if (card.state == CardState.newCard || card.reviewCount == 0) {
       return _reviewNewCard(card, performance, now);
     } else {
       return _reviewReviewCard(card, performance, elapsedDays, now);
@@ -64,7 +68,7 @@ class FSRS {
       lapseCount: performance == FSRSPerformance.again ? card.lapseCount + 1 : card.lapseCount,
       elapsedDays: 0,
       scheduledDays: nextInterval,
-      state: CardState.learning,
+      state: performance == FSRSPerformance.again ? CardState.relearning : CardState.learning,
     );
     
     return FSRSCardReview(
@@ -95,16 +99,18 @@ class FSRS {
     int nextInterval = _nextInterval(stability, performance);
     DateTime nextDue = now.add(Duration(days: nextInterval));
     
+    CardState newState = performance == FSRSPerformance.again ? CardState.relearning : CardState.review;
+    
     final updatedCard = card.copyWith(
-      difficulty: difficulty,
-      stability: stability,
+      difficulty: difficulty.clamp(0.1, w[10]),
+      stability: stability.clamp(w[9], 365.0), // Max stability 1 year
       lastReview: now,
       dueDate: nextDue,
       reviewCount: card.reviewCount + 1,
       lapseCount: performance == FSRSPerformance.again ? card.lapseCount + 1 : card.lapseCount,
       elapsedDays: elapsedDays,
       scheduledDays: nextInterval,
-      state: CardState.review,
+      state: newState,
     );
     
     return FSRSCardReview(
@@ -119,9 +125,9 @@ class FSRS {
   double _initDifficulty(FSRSPerformance performance) {
     switch (performance) {
       case FSRSPerformance.again:
-        return w[0] + w[5];
+        return (w[0] + w[5]).clamp(0.1, w[10]);
       case FSRSPerformance.hard:
-        return w[0] + w[6] * 0.5;
+        return (w[0] + w[6] * 0.5).clamp(0.1, w[10]);
       case FSRSPerformance.good:
         return w[0];
       case FSRSPerformance.easy:
@@ -145,9 +151,9 @@ class FSRS {
   double _nextDifficulty(double currentD, FSRSPerformance performance) {
     switch (performance) {
       case FSRSPerformance.again:
-        return min(w[10], currentD + w[5]);
+        return (currentD + w[5]).clamp(0.1, w[10]);
       case FSRSPerformance.hard:
-        return min(w[10], currentD + w[6]);
+        return (currentD + w[6]).clamp(0.1, w[10]);
       case FSRSPerformance.good:
         return currentD;
       case FSRSPerformance.easy:
@@ -159,7 +165,16 @@ class FSRS {
     double hardPenalty = performance == FSRSPerformance.hard ? w[4] : 1.0;
     double easyBonus = performance == FSRSPerformance.easy ? w[11] : 1.0;
     
-    return currentS * (1 + exp(w[2]) * (11 - difficulty) * pow(currentS, -w[3]) * (exp((1 - retrievability) * w[4]) - 1) * hardPenalty * easyBonus);
+    double s = currentS * (1 + 
+        exp(w[2]) * 
+        (11 - difficulty) * 
+        pow(currentS, -w[3]) * 
+        (exp((1 - retrievability) * w[4]) - 1) * 
+        hardPenalty * 
+        easyBonus
+    );
+    
+    return s.clamp(w[9], 365.0); // Ensure stability stays within bounds
   }
 
   int _nextInterval(double stability, FSRSPerformance performance) {
@@ -180,7 +195,7 @@ class FSRS {
     }
     
     // Add some fuzzing to avoid pattern recognition
-    final fuzz = 0.95 + Random().nextDouble() * 0.1; // 95-105% variation
+    final fuzz = 0.95 + _random.nextDouble() * 0.1; // 95-105% variation
     interval = interval * fuzz;
     
     return max(1, interval.round());
@@ -188,8 +203,19 @@ class FSRS {
 
   // Calculate retrievability probability (0-1)
   double calculateRetrievability(FSRSCard card) {
-    final double elapsedDays = max(0.0, (DateTime.now().difference(card.lastReview).inSeconds / 86400)).toDouble();
+    final double elapsedDays = max(0.1, (DateTime.now().difference(card.lastReview).inSeconds / 86400)).toDouble();
     return exp(log(0.9) * elapsedDays / card.stability);
+  }
+
+  // Check if card is due for review
+  bool isCardDue(FSRSCard card) {
+    return DateTime.now().isAfter(card.dueDate) || 
+           DateTime.now().isAtSameMomentAs(card.dueDate);
+  }
+
+  // Get days until card is due (negative if overdue)
+  int getDaysUntilDue(FSRSCard card) {
+    return card.dueDate.difference(DateTime.now()).inDays;
   }
 }
 
@@ -243,13 +269,13 @@ class FSRSCard {
   // Create from map for deserialization
   factory FSRSCard.fromMap(Map<String, dynamic> map) {
     return FSRSCard(
-      difficulty: map['difficulty'] ?? 0.4,
-      stability: map['stability'] ?? 2.0,
-      lastReview: DateTime.fromMillisecondsSinceEpoch(map['lastReview']),
-      dueDate: DateTime.fromMillisecondsSinceEpoch(map['dueDate']),
+      difficulty: (map['difficulty'] ?? 0.4).toDouble(),
+      stability: (map['stability'] ?? 2.0).toDouble(),
+      lastReview: DateTime.fromMillisecondsSinceEpoch(map['lastReview'] ?? DateTime.now().millisecondsSinceEpoch),
+      dueDate: DateTime.fromMillisecondsSinceEpoch(map['dueDate'] ?? DateTime.now().millisecondsSinceEpoch),
       reviewCount: map['reviewCount'] ?? 0,
       lapseCount: map['lapseCount'] ?? 0,
-      elapsedDays: map['elapsedDays'] ?? 0,
+      elapsedDays: (map['elapsedDays'] ?? 0).toDouble(),
       scheduledDays: map['scheduledDays'] ?? 0,
       state: CardState.values[map['state'] ?? 0],
     );
@@ -278,9 +304,23 @@ class FSRSCard {
       state: state ?? this.state,
     );
   }
+
+  // Get card status for display
+  String get status {
+    switch (state) {
+      case CardState.newCard:
+        return 'Baru';
+      case CardState.learning:
+        return 'Belajar';
+      case CardState.review:
+        return 'Review';
+      case CardState.relearning:
+        return 'Ulangi';
+    }
+  }
 }
 
-// Performance rating enum (tetap sama)
+// Performance rating enum
 enum FSRSPerformance {
   again, // Complete forget
   hard,  // Remembered with difficulty
@@ -343,10 +383,13 @@ class FSRSCardManager {
   // Get cards due within next N days
   List<String> getCardsDueInNextDays(int days) {
     final cutoff = DateTime.now().add(Duration(days: days));
+    final now = DateTime.now();
     return _cards.entries
         .where((entry) => 
-            entry.value.dueDate.isBefore(cutoff) && 
-            entry.value.dueDate.isAfter(DateTime.now()))
+            (entry.value.dueDate.isBefore(cutoff) || 
+             entry.value.dueDate.isAtSameMomentAs(cutoff)) && 
+            (entry.value.dueDate.isAfter(now) || 
+             entry.value.dueDate.isAtSameMomentAs(now)))
         .map((entry) => entry.key)
         .toList();
   }
@@ -358,35 +401,85 @@ class FSRSCardManager {
     
     // Mastery based on stability and difficulty
     final stabilityScore = min(1.0, card.stability / 365.0); // Max 365 days stability
-    final difficultyScore = 1.0 - card.difficulty; // Lower difficulty = better mastery
+    final difficultyScore = 1.0 - (card.difficulty / FSRS.defaultParameters[10]); // Normalize difficulty
     
-    return (stabilityScore * 0.7 + difficultyScore * 0.3);
+    // Review count bonus (more reviews = higher mastery)
+    final reviewBonus = min(0.3, card.reviewCount * 0.05);
+    
+    // Lapse penalty
+    final lapsePenalty = min(0.2, card.lapseCount * 0.1);
+    
+    return (stabilityScore * 0.5 + difficultyScore * 0.3 + reviewBonus - lapsePenalty).clamp(0.0, 1.0);
   }
 
-  // Get total mastered cards (mastery > 0.8)
+  // Get mastery level description
+  String getMasteryDescription(double mastery) {
+    if (mastery < 0.3) return 'Pemula';
+    if (mastery < 0.6) return 'Menengah';
+    if (mastery < 0.8) return 'Mahir';
+    return 'Expert';
+  }
+
+  // Get total mastered cards (mastery > 0.7)
   int getMasteredCount() {
-    return _cards.values.where((card) {
-      final key = _cards.keys.firstWhere(
-        (k) => _cards[k] == card,
-        orElse: () => ''
-      );
-      return key.isNotEmpty && getMasteryLevel(key) > 0.8;
-    }).length;
+    return _cards.keys.where((id) => getMasteryLevel(id) > 0.7).length;
   }
 
   // Get count of cards due tomorrow
   int getTomorrowDueCount() {
     final tomorrow = DateTime.now().add(Duration(days: 1));
+    final now = DateTime.now();
     return _cards.values.where((card) => 
-      card.dueDate.isBefore(tomorrow) && 
-      card.dueDate.isAfter(DateTime.now())
+      (card.dueDate.isBefore(tomorrow) || card.dueDate.isAtSameMomentAs(tomorrow)) && 
+      (card.dueDate.isAfter(now) || card.dueDate.isAtSameMomentAs(now))
     ).length;
+  }
+
+  // Get all card IDs
+  List<String> getAllCardIds() {
+    return _cards.keys.toList();
+  }
+
+  // Get card statistics
+  Map<String, dynamic> getStatistics() {
+    final totalCards = _cards.length;
+    final dueCards = getDueCards().length;
+    final masteredCards = getMasteredCount();
+    final averageMastery = totalCards > 0 
+        ? _cards.keys.map(getMasteryLevel).reduce((a, b) => a + b) / totalCards
+        : 0.0;
+
+    return {
+      'totalCards': totalCards,
+      'dueCards': dueCards,
+      'masteredCards': masteredCards,
+      'averageMastery': averageMastery,
+      'tomorrowDue': getTomorrowDueCount(),
+    };
+  }
+
+  // Initialize cards for a list of question IDs
+  void initializeCards(List<String> questionIds) {
+    for (var id in questionIds) {
+      if (!_cards.containsKey(id)) {
+        _cards[id] = fsrs.createCard();
+      }
+    }
+  }
+
+  // Clean up cards that are no longer needed
+  void cleanupCards(List<String> validIds) {
+    final invalidIds = _cards.keys.where((id) => !validIds.contains(id)).toList();
+    for (var id in invalidIds) {
+      _cards.remove(id);
+    }
   }
 
   // Serialize all cards to map
   Map<String, dynamic> toMap() {
     return {
       'cards': _cards.map((key, value) => MapEntry(key, value.toMap())),
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
     };
   }
 
@@ -396,9 +489,29 @@ class FSRSCardManager {
     final cardsMap = map['cards'] as Map<String, dynamic>? ?? {};
     
     cardsMap.forEach((key, value) {
-      manager._cards[key] = FSRSCard.fromMap(value);
+      try {
+        manager._cards[key] = FSRSCard.fromMap(Map<String, dynamic>.from(value));
+      } catch (e) {
+        print('Error loading card $key: $e');
+      }
     });
     
     return manager;
+  }
+
+  // Get cards sorted by mastery level (ascending - weakest first)
+  List<String> getCardsSortedByMastery() {
+    return _cards.keys.toList()
+      ..sort((a, b) => getMasteryLevel(a).compareTo(getMasteryLevel(b)));
+  }
+
+  // Get cards sorted by due date (earliest first)
+  List<String> getCardsSortedByDueDate() {
+    return _cards.keys.toList()
+      ..sort((a, b) {
+        final cardA = _cards[a]!;
+        final cardB = _cards[b]!;
+        return cardA.dueDate.compareTo(cardB.dueDate);
+      });
   }
 }

@@ -77,8 +77,8 @@ flutter:
           weight: 400
 
   assets:
-    - assets/audio/BubbleClick.mp3
-    - assets/audio/PopClick.mp3
+    - assets/audio/
+    - assets/images/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

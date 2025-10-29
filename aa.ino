@@ -404,45 +404,6 @@ void handleRFIDData(String rfidData) {
   response += "\"type\":\"rfid_result\",";
   response += "\"uid\":\"" + rfidData + "\",";
   
-  if (rfidData == "FEA4B889") {
-    response += "\"status\":\"success\",";
-    response += "\"card_type\":\"Animal_Card_1\",";
-    response += "\"message\":\"Hewan: Kucing\",";
-    response += "\"sound\":\"meong\",";
-    response += "\"image\":\"🐱\"";
-    deviceStatus = "RFID: Kucing";
-  }
-  else if (rfidData == "89AAE568") {
-    response += "\"status\":\"success\",";
-    response += "\"card_type\":\"Animal_Card_2\",";
-    response += "\"message\":\"Hewan: Anjing\",";
-    response += "\"sound\":\"gukguk\",";
-    response += "\"image\":\"🐶\"";
-    deviceStatus = "RFID: Anjing";
-  }
-  else if (rfidData == "C9D0E1F2") {
-    response += "\"status\":\"success\",";
-    response += "\"card_type\":\"Animal_Card_3\",";
-    response += "\"message\":\"Hewan: Sapi\",";
-    response += "\"sound\":\"moo\",";
-    response += "\"image\":\"🐮\"";
-    deviceStatus = "RFID: Sapi";
-  }
-  else if (rfidData == "F3A4B5C6") {
-    response += "\"status\":\"success\",";
-    response += "\"card_type\":\"Animal_Card_4\",";
-    response += "\"message\":\"Hewan: Ayam\",";
-    response += "\"sound\":\"kukuruyuk\",";
-    response += "\"image\":\"🐔\"";
-    deviceStatus = "RFID: Ayam";
-  }
-  else {
-    response += "\"status\":\"unknown\",";
-    response += "\"message\":\"Kartu tidak dikenali\",";
-    response += "\"card_type\":\"Unknown\"";
-    deviceStatus = "RFID: Kartu Tidak Dikenali";
-  }
-  
   response += "}";
   
   if (tcpClient && tcpClient.connected()) {

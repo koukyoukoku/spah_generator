@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:Eksplorasi/components/SmoothPress.dart';
 import 'package:Eksplorasi/services/esp32_service.dart';
 import 'package:Eksplorasi/models/languages/index.dart';
-import 'package:Eksplorasi/utils/tts_service.dart';
+import 'package:Eksplorasi/services/tts_service.dart';
 import 'package:Eksplorasi/services/firebase.dart';
 
 class PlayScreen extends StatefulWidget {

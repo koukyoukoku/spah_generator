@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:Eksplorasi/utils/tts_service.dart';
+import 'package:Eksplorasi/services/tts_service.dart';
 import 'package:Eksplorasi/models/languages/index.dart';
 
 class ObjectDetailScreen extends StatefulWidget {
@@ -20,7 +20,8 @@ class ObjectDetailScreen extends StatefulWidget {
   _ObjectDetailScreenState createState() => _ObjectDetailScreenState();
 }
 
-class _ObjectDetailScreenState extends State<ObjectDetailScreen> with SingleTickerProviderStateMixin {
+class _ObjectDetailScreenState extends State<ObjectDetailScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<Color?> _colorAnimation;
   int _currentStep = 0;
@@ -31,7 +32,7 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> with SingleTick
   @override
   void initState() {
     super.initState();
-    
+
     _animationController = AnimationController(
       duration: Duration(milliseconds: 500),
       vsync: this,
@@ -49,14 +50,14 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> with SingleTick
   void _prepareSpellingSteps() {
     String name = widget.objectName;
     List<String> syllables = [];
-    
+
     if (widget.objectData != null && widget.objectData!['syllables'] != null) {
       final syllablesData = widget.objectData!['syllables'];
       String languageKey = widget.isEnglish ? 'en' : 'id';
-      
+
       print('🔍 Syllables data: $syllablesData');
       print('🔍 Language key: $languageKey');
-      
+
       if (syllablesData.containsKey(languageKey)) {
         syllables = List<String>.from(syllablesData[languageKey]);
         print('✅ Using Firebase syllables: $syllables');
@@ -70,11 +71,11 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> with SingleTick
     }
 
     _syllableRanges = _calculateSyllableRanges(name, syllables);
-    
+
     _spellingSteps = [name];
     _spellingSteps.addAll(syllables);
     _spellingSteps.add(name);
-    
+
     print('📝 Spelling steps: $_spellingSteps');
   }
 
@@ -114,17 +115,17 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> with SingleTick
 
   List<String> _splitIntoSyllables(String word, bool isEnglish) {
     if (word.length <= 3) return [word];
-    
+
     List<String> syllables = [];
     String currentSyllable = '';
-    
+
     for (int i = 0; i < word.length; i++) {
       currentSyllable += word[i];
-      
+
       if (isEnglish) {
         bool isVowel = 'aeiouAEIOU'.contains(word[i]);
         bool isLastChar = i == word.length - 1;
-        
+
         if (isVowel && !isLastChar) {
           if (i + 1 < word.length && !'aeiouAEIOU'.contains(word[i + 1])) {
             syllables.add(currentSyllable);
@@ -138,31 +139,48 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> with SingleTick
         }
       }
     }
-    
+
     if (currentSyllable.isNotEmpty) {
       syllables.add(currentSyllable);
     }
-    
+
     return syllables.isNotEmpty ? syllables : [word];
   }
 
-  List<List<int>> _calculateSyllableRanges(String fullWord, List<String> syllables) {
+  List<List<int>> _calculateSyllableRanges(
+    String fullWord,
+    List<String> syllables,
+  ) {
     List<List<int>> ranges = [];
     int currentIndex = 0;
-    
+
     for (String syllable in syllables) {
       int start = currentIndex;
       int end = currentIndex + syllable.length;
       ranges.add([start, end]);
       currentIndex = end;
     }
-    
+
     return ranges;
+  }
+
+  void _validateImagePath(String imagePath) {
+    print('🔍 Validating image path: $imagePath');
+
+    if (imagePath.contains('assets/assets/')) {
+      print('⚠️ Warning: Duplicate assets folder in path');
+    }
+
+    if (!imagePath.toLowerCase().endsWith('.png') &&
+        !imagePath.toLowerCase().endsWith('.jpg') &&
+        !imagePath.toLowerCase().endsWith('.jpeg')) {
+      print('⚠️ Warning: Uncommon image extension');
+    }
   }
 
   void _startSequence() async {
     if (_isPlaying) return;
-    
+
     setState(() {
       _isPlaying = true;
       _currentStep = 0;
@@ -170,18 +188,18 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> with SingleTick
 
     for (int i = 0; i < _spellingSteps.length; i++) {
       if (!mounted) break;
-      
+
       setState(() {
         _currentStep = i;
       });
 
       _animationController.forward(from: 0);
-      
+
       await Future.delayed(Duration(milliseconds: 300));
-      
+
       await _speakSyllable(_spellingSteps[i], i);
       _animationController.reverse();
-      
+
       if (i < _spellingSteps.length - 1) {
         await Future.delayed(Duration(milliseconds: 800));
       }
@@ -199,17 +217,17 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> with SingleTick
 
     String currentLanguage = widget.isEnglish ? 'en' : 'id';
     await TTSService.setLanguage(currentLanguage);
-    
+
     print('🗣️ Speaking ($currentLanguage): "$text" at step $stepIndex');
-    
+
     if (stepIndex > 0 && stepIndex < _spellingSteps.length - 1) {
       await TTSService.speak(text);
-      
+
       int delay = text.length * 400 + 600;
       await Future.delayed(Duration(milliseconds: delay));
     } else {
       await TTSService.speak(text);
-      
+
       int delay = text.length * 300 + 1000;
       await Future.delayed(Duration(milliseconds: delay));
     }
@@ -217,7 +235,7 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> with SingleTick
 
   Widget _buildSyllableHighlight() {
     String fullWord = widget.objectName;
-    
+
     if (_currentStep == 0 || _currentStep >= _spellingSteps.length - 1) {
       return _buildHighlightedText(fullWord, 0, fullWord.length);
     } else {
@@ -253,9 +271,9 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> with SingleTick
               fontFamily: 'ComicNeue',
             ),
           ),
-        
+
         _buildHighlightedText(text.substring(start, end), 0, end - start),
-        
+
         if (end < text.length)
           Text(
             text.substring(end),
@@ -301,8 +319,8 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> with SingleTick
       return widget.isEnglish ? "Say it again!" : "Ulangi kata!";
     } else {
       int syllableNumber = _currentStep;
-      return widget.isEnglish 
-          ? "Syllable $syllableNumber" 
+      return widget.isEnglish
+          ? "Syllable $syllableNumber"
           : "Suku kata $syllableNumber";
     }
   }
@@ -319,9 +337,19 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> with SingleTick
 
   String _getImagePath() {
     if (widget.objectData != null && widget.objectData!['image'] != null) {
-      return widget.objectData!['image'].toString();
+      String imagePath = widget.objectData!['image'].toString();
+
+      print('🖼️ Firebase image path: $imagePath');
+      _validateImagePath(imagePath);
+
+      if (!imagePath.startsWith('assets/') && !imagePath.contains('/')) {
+        imagePath = 'images/$imagePath';
+      }
+
+      print('🔧 Final image path: $imagePath');
+      return imagePath;
     }
-    
+
     final Map<String, String> fallbackImages = {
       'Apple': 'assets/images/apple.png',
       'Apel': 'assets/images/apple.png',
@@ -360,7 +388,7 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> with SingleTick
       'Star': 'assets/images/star.png',
       'Bintang': 'assets/images/star.png',
     };
-    
+
     return fallbackImages[widget.objectName] ?? 'assets/images/placeholder.png';
   }
 
@@ -439,10 +467,7 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> with SingleTick
                         offset: Offset(0, 6),
                       ),
                     ],
-                    border: Border.all(
-                      color: Color(0xFF4ECDC4),
-                      width: 4,
-                    ),
+                    border: Border.all(color: Color(0xFF4ECDC4), width: 4),
                   ),
                   child: ClipOval(
                     child: Image.asset(
@@ -451,10 +476,14 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> with SingleTick
                       height: 180,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
-                        return Icon(
-                          Icons.photo,
-                          size: 80,
-                          color: Color(0xFF4ECDC4),
+                        print('❌ Error loading image: $imagePath - $error');
+                        return Container(
+                          color: Colors.grey[100],
+                          child: Icon(
+                            Icons.photo,
+                            size: 80,
+                            color: Color(0xFF4ECDC4),
+                          ),
                         );
                       },
                     ),
@@ -495,9 +524,7 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> with SingleTick
                       ),
                     ],
                   ),
-                  child: Center(
-                    child: _buildSyllableHighlight(),
-                  ),
+                  child: Center(child: _buildSyllableHighlight()),
                 ),
 
                 SizedBox(height: 30),
@@ -509,7 +536,7 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> with SingleTick
                       height: 12,
                       margin: EdgeInsets.symmetric(horizontal: 4),
                       decoration: BoxDecoration(
-                        color: index == _currentStep 
+                        color: index == _currentStep
                             ? Color(0xFF4ECDC4)
                             : Colors.grey[300],
                         shape: BoxShape.circle,
@@ -529,7 +556,10 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> with SingleTick
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 40,
+                          vertical: 16,
+                        ),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
