@@ -117,17 +117,16 @@ void handleRFIDReading() {
   }
   uidString.toUpperCase();
 
-  if (uidString != lastRFIDUID) {
-    lastRFIDUID = uidString;
-    rfidPresent = true;
-    lastRFIDRead = millis();
-    
-    Serial.println("RFID Detected: " + uidString);
-    handleRFIDData(uidString);
-    
-    mfrc522.PICC_HaltA();
-    mfrc522.PCD_StopCrypto1();
-  }
+  // Always send RFID UID regardless of whether it's the same card
+  lastRFIDUID = uidString;
+  rfidPresent = true;
+  lastRFIDRead = millis();
+  
+  Serial.println("RFID Detected: " + uidString);
+  handleRFIDData(uidString);
+  
+  mfrc522.PICC_HaltA();
+  mfrc522.PCD_StopCrypto1();
 }
 
 void sendRFIDRemoved() {
@@ -310,12 +309,6 @@ void processJSONMessage(String jsonMessage) {
     String timestamp = jsonMessage.substring(tsStart, tsEnd);
     sendPong(timestamp);
   }
-  else if (jsonMessage.indexOf("\"type\":\"rfid\"") != -1) {
-    int dataStart = jsonMessage.indexOf("\"data\":\"") + 8;
-    int dataEnd = jsonMessage.indexOf("\"", dataStart);
-    String rfidData = jsonMessage.substring(dataStart, dataEnd);
-    handleRFIDData(rfidData);
-  }
   else {
     sendUnknownCommand();
   }
@@ -401,14 +394,16 @@ void handleRFIDData(String rfidData) {
   Serial.println("Processing RFID: " + rfidData);
   
   String response = "{";
-  response += "\"type\":\"rfid_result\",";
+  response += "\"type\":\"rfid_detected\",";
   response += "\"uid\":\"" + rfidData + "\",";
-  
+  response += "\"timestamp\":" + String(millis());
   response += "}";
   
   if (tcpClient && tcpClient.connected()) {
     tcpClient.println(response);
   }
+
+  deviceStatus = "RFID: " + rfidData;
 }
 
 void scanWiFiNetworks() {
