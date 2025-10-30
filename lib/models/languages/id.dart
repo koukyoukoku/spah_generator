@@ -131,22 +131,22 @@ class IndonesianLanguage {
       "title": "Panduan Penggunaan",
       "subtitle": "Pelajari cara menggunakan aplikasi dengan optimal",
       "nfc_title": "Cara Menggunakan NFC",
-      "nfc_description": "Tutorial penggunaan fitur NFC untuk Eksplorasi benda",
-      "quiz_title": "Fitur Kuiz",
+      "nfc_description": "Tutorial penggunaan fitur NFC untuk eksplorasi benda",
+      "quiz_title": "Fitur Kuis",
       "quiz_description": "Cara anak berinteraksi dengan kuis edukasi",
       "parental_title": "Pengaturan Orang Tua",
       "parental_description":
           "Cara mengakses dan menggunakan kontrol orang tua",
       "tips_title": "Tips Belajar",
-      "tips_description": "Tips untuk mendampingi SPAH selama belajar",
+      "tips_description": "Tips untuk mendampingi anak selama belajar",
       "nfc_content":
-          "1. Tekan tombol \"MULAI\" di menu utama\n2. Tempelkan perangkat ke benda yang memiliki tag NFC\n3. Aplikasi akan otomatis mendeteksi dan memberikan feedback\n4. Anak dapat mengEksplorasi berbagai benda secara bergantian",
+          "1. Tekan tombol \"MULAI\" di menu utama\n2. Tempelkan perangkat ke benda yang memiliki tag NFC\n3. Aplikasi akan otomatis mendeteksi dan memberikan feedback\n4. Anak dapat mengeksplorasi berbagai benda secara bergantian\n5. Pastikan fitur NFC aktif di perangkat Anda\n6. Dekatkan perangkat ke tag NFC (1-2 cm)",
       "quiz_content":
-          "1. Pilih menu \"KUIS\" di halaman utama\n2. Jawab pertanyaan yang muncul dengan menekan pilihan jawaban\n3. Dapatkan feedback langsung untuk setiap jawaban\n4. Lihat progres belajar anak di bagian laporan",
+          "1. Pilih menu \"KUIS\" di halaman utama\n2. Jawab pertanyaan yang muncul dengan menekan pilihan jawaban\n3. Dapatkan feedback langsung untuk setiap jawaban\n4. Lihat progres belajar anak di bagian laporan\n5. Selesaikan semua pertanyaan untuk mendapatkan skor\n6. Jawaban salah akan dijelaskan untuk pemahaman yang lebih baik",
       "parental_content":
-          "1. Akses menu \"Panduan Untuk Orang Tua\"\n2. Masukkan PIN akses (default: 1234)\n3. Kelola berbagai pengaturan sesuai kebutuhan\n4. Ubah PIN secara berkala untuk keamanan",
+          "1. Akses menu \"Panduan Orang Tua\"\n2. Masukkan PIN akses (default: 1234)\n3. Kelola berbagai pengaturan sesuai kebutuhan\n4. Ubah PIN secara berkala untuk keamanan\n5. Atur batas waktu penggunaan harian\n6. Pantau laporan progres belajar",
       "tips_content":
-          "• dampingi SCP selama menggunakan aplikasi karena sangat berbahaya\n• berikan pujian untuk setiap keberhasilan\n• Potong2 kol dan daun bawang cuci dan tiriskan, potong bawang merah dan putih dan cabe tipis2, siapkan wajan goreng telor orak arek sisihkan\n• Tumis bawang merah putih cabe sampek layu, masukan terasi, kol dan daun bawang aduk rata\n• Masukan telor orak arik kedalam nasi yg sudah tempur bumbu, tambahkan penyedap rasa, garam secukupnya, tambahkan gula pasir sedikit jika perlu",
+          "• Dampingi anak selama menggunakan aplikasi\n• Berikan pujian untuk setiap keberhasilan dan usaha\n• Ciptakan lingkungan belajar yang nyaman\n• Biarkan anak bereksplorasi dengan kecepatannya sendiri\n• Diskusikan apa yang telah dipelajari setelah setiap sesi\n• Batasi waktu layar sesuai rekomendasi usia",
       "default_content": "Konten panduan akan segera tersedia...",
     },
     'menu_utama': {

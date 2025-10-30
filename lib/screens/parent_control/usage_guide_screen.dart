@@ -10,20 +10,30 @@ class UsageGuideScreen extends StatefulWidget {
 class _UsageGuideScreenState extends State<UsageGuideScreen> {
   late List<GuideItem> _guideItems;
   int _expandedIndex = -1;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _initializeLanguage();
-    _initializeGuideItems();
+    _initializeData();
   }
 
-  void _initializeLanguage() async {
-    await AppLocalizations.init();
-    if (mounted) {
-      setState(() {
-        _initializeGuideItems();
-      });
+  Future<void> _initializeData() async {
+    try {
+      await AppLocalizations.init();
+      if (mounted) {
+        setState(() {
+          _initializeGuideItems();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error initializing data: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -33,25 +43,25 @@ class _UsageGuideScreenState extends State<UsageGuideScreen> {
         title: AppLocalizations.get('usage_guide.nfc_title'),
         description: AppLocalizations.get('usage_guide.nfc_description'),
         icon: Icons.nfc_rounded,
-        color: Color(0xFF4ECDC4),
+        color: const Color(0xFF4ECDC4),
       ),
       GuideItem(
         title: AppLocalizations.get('usage_guide.quiz_title'),
         description: AppLocalizations.get('usage_guide.quiz_description'),
         icon: Icons.quiz_rounded,
-        color: Color(0xFFFE6D73),
+        color: const Color(0xFFFE6D73),
       ),
       GuideItem(
         title: AppLocalizations.get('usage_guide.parental_title'),
         description: AppLocalizations.get('usage_guide.parental_description'),
         icon: Icons.family_restroom_rounded,
-        color: Color(0xFFFED766),
+        color: const Color(0xFFFED766),
       ),
       GuideItem(
         title: AppLocalizations.get('usage_guide.tips_title'),
         description: AppLocalizations.get('usage_guide.tips_description'),
         icon: Icons.lightbulb_rounded,
-        color: Color(0xFFA5D8FF),
+        color: const Color(0xFFA5D8FF),
       ),
     ];
   }
@@ -59,79 +69,11 @@ class _UsageGuideScreenState extends State<UsageGuideScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFE8F4F8),
+      backgroundColor: const Color(0xFFE8F4F8),
       body: SafeArea(
         child: Stack(
           children: [
-            Column(
-              children: [
-                SizedBox(height: 40),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.all(30),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black26,
-                                blurRadius: 10,
-                                offset: Offset(0, 4),
-                              ),
-                            ],
-                            border: Border.all(
-                              color: Color(0xFFFED766),
-                              width: 4,
-                            ),
-                          ),
-                          child: Icon(
-                            Icons.menu_book_rounded,
-                            size: 60,
-                            color: Color(0xFFFED766),
-                          ),
-                        ),
-
-                        SizedBox(height: 30),
-                        Text(
-                          AppLocalizations.get('usage_guide.title'),
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF2D5A7E),
-                            fontFamily: 'ComicNeue',
-                          ),
-                        ),
-
-                        SizedBox(height: 8),
-
-                        Text(
-                          AppLocalizations.get('usage_guide.subtitle'),
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFF666666),
-                            fontFamily: 'ComicNeue',
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-
-                        SizedBox(height: 40),
-                        ..._guideItems.asMap().entries.map((entry) {
-                          final index = entry.key;
-                          final item = entry.value;
-                          return _buildGuideItem(item, index);
-                        }).toList(),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            // Background circles
             Positioned(
               top: -50,
               right: -30,
@@ -139,12 +81,11 @@ class _UsageGuideScreenState extends State<UsageGuideScreen> {
                 width: 200,
                 height: 200,
                 decoration: BoxDecoration(
-                  color: Color(0xFFFED766).withOpacity(0.1),
+                  color: const Color(0xFFFED766).withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
               ),
             ),
-
             Positioned(
               bottom: -80,
               left: -40,
@@ -152,11 +93,13 @@ class _UsageGuideScreenState extends State<UsageGuideScreen> {
                 width: 250,
                 height: 250,
                 decoration: BoxDecoration(
-                  color: Color(0xFF4ECDC4).withOpacity(0.1),
+                  color: const Color(0xFF4ECDC4).withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
               ),
             ),
+
+            // Back button
             Positioned(
               top: 16,
               left: 16,
@@ -168,12 +111,12 @@ class _UsageGuideScreenState extends State<UsageGuideScreen> {
                     BoxShadow(
                       color: Colors.black12,
                       blurRadius: 6,
-                      offset: Offset(0, 3),
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
                 child: IconButton(
-                  icon: Icon(
+                  icon: const Icon(
                     Icons.arrow_back_rounded,
                     color: Color(0xFF2D5A7E),
                     size: 24,
@@ -182,6 +125,90 @@ class _UsageGuideScreenState extends State<UsageGuideScreen> {
                 ),
               ),
             ),
+
+            // Main content
+            if (_isLoading)
+              const Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2D5A7E)),
+                ),
+              )
+            else
+              Column(
+                children: [
+                  const SizedBox(height: 40),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(30),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Header Icon
+                          Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                              border: Border.all(
+                                color: const Color(0xFFFED766),
+                                width: 4,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.menu_book_rounded,
+                              size: 60,
+                              color: Color(0xFFFED766),
+                            ),
+                          ),
+
+                          const SizedBox(height: 30),
+                          
+                          // Title
+                          Text(
+                            AppLocalizations.get('usage_guide.title'),
+                            style: const TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF2D5A7E),
+                              fontFamily: 'ComicNeue',
+                            ),
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          // Subtitle
+                          Text(
+                            AppLocalizations.get('usage_guide.subtitle'),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Color(0xFF666666),
+                              fontFamily: 'ComicNeue',
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+
+                          const SizedBox(height: 40),
+                          
+                          // Guide Items
+                          ..._guideItems.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final item = entry.value;
+                            return _buildGuideItem(item, index);
+                          }).toList(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
@@ -192,14 +219,15 @@ class _UsageGuideScreenState extends State<UsageGuideScreen> {
     bool isExpanded = _expandedIndex == index;
 
     return Container(
-      margin: EdgeInsets.only(bottom: 20),
+      margin: const EdgeInsets.only(bottom: 20),
       child: SmoothPressButton(
         onPressed: () {
           setState(() {
             _expandedIndex = isExpanded ? -1 : index;
           });
         },
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
@@ -207,17 +235,18 @@ class _UsageGuideScreenState extends State<UsageGuideScreen> {
               BoxShadow(
                 color: Colors.black12,
                 blurRadius: 10,
-                offset: Offset(0, 4),
+                offset: const Offset(0, 4),
               ),
             ],
             border: Border.all(color: item.color.withOpacity(0.3), width: 2),
           ),
           child: Padding(
-            padding: EdgeInsets.all(20),
+            padding: const EdgeInsets.all(20),
             child: Column(
               children: [
                 Row(
                   children: [
+                    // Icon
                     Container(
                       width: 50,
                       height: 50,
@@ -227,32 +256,38 @@ class _UsageGuideScreenState extends State<UsageGuideScreen> {
                       ),
                       child: Icon(item.icon, color: item.color, size: 24),
                     ),
-                    SizedBox(width: 16),
+                    const SizedBox(width: 16),
+                    
+                    // Text Content
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             item.title,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
                               color: Color(0xFF2D5A7E),
                               fontFamily: 'ComicNeue',
                             ),
                           ),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text(
                             item.description,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 14,
                               color: Color(0xFF666666),
                               fontFamily: 'ComicNeue',
                             ),
+                            maxLines: isExpanded ? 3 : 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
                     ),
+                    
+                    // Expand Icon
                     Icon(
                       isExpanded
                           ? Icons.expand_less_rounded
@@ -262,19 +297,21 @@ class _UsageGuideScreenState extends State<UsageGuideScreen> {
                     ),
                   ],
                 ),
+                
+                // Expanded Content
                 if (isExpanded) ...[
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Divider(color: item.color.withOpacity(0.3), height: 1),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Container(
-                    padding: EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: item.color.withOpacity(0.05),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       _getGuideContent(index),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 14,
                         color: Color(0xFF2D5A7E),
                         height: 1.6,
@@ -313,7 +350,7 @@ class GuideItem {
   final IconData icon;
   final Color color;
 
-  GuideItem({
+  const GuideItem({
     required this.title,
     required this.description,
     required this.icon,
