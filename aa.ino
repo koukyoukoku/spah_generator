@@ -1,19 +1,28 @@
 #include <WiFi.h>
-#include <EEPROM.h>
 #include <WiFiUdp.h>
 #include <SPI.h>
 #include <MFRC522.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 
 const char* DEVICE_NAME = "ESP32_RFID_Device";
 const unsigned long STATUS_UPDATE_INTERVAL = 30000;
 const unsigned long CONNECTION_CHECK_INTERVAL = 1000;
 
-#define EEPROM_SIZE 512
-#define SSID_ADDR 0
-#define PASS_ADDR 32
+// Fixed WiFi credentials
+const char* FIXED_SSID = "asdasda";
+const char* FIXED_PASSWORD = "11111111";
 
-#define RST_PIN 21
+#define RST_PIN 17
 #define SS_PIN 5
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET -1
+#define SCREEN_ADDRESS 0x3C
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 MFRC522::MIFARE_Key key;
@@ -22,8 +31,6 @@ String lastRFIDUID = "";
 unsigned long lastRFIDRead = 0;
 const unsigned long RFID_READ_INTERVAL = 500;
 
-String storedSSID = "";
-String storedPassword = "";
 String deviceStatus = "Booting...";
 unsigned long deviceUptime = 0;
 unsigned long lastStatusUpdate = 0;
@@ -34,72 +41,149 @@ WiFiUDP udp;
 WiFiServer tcpServer(1234);
 WiFiClient tcpClient;
 bool tcpConnected = false;
+bool handshakeCompleted = false;
 const int UDP_PORT = 8888;
 const int TCP_PORT = 1234;
 const unsigned long CLIENT_TIMEOUT = 45000;
 
 void setup() {
   Serial.begin(115200);
+  
+  // Initialize OLED display
+  if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;);
+  }
+  
+  display.clearDisplay();
+  display.setTextColor(SSD1306_WHITE);
+  display.setTextSize(1);
+  display.setCursor(0,0);
+  display.println("Initializing...");
+  display.display();
+  delay(2000);
+
   SPI.begin();
   mfrc522.PCD_Init();
-  
+
   for (byte i = 0; i < 6; i++) {
     key.keyByte[i] = 0xFF;
   }
-  
-  EEPROM.begin(EEPROM_SIZE);
-  readWiFiCredentials();
-  
-  if (storedSSID.length() > 0 && isValidSSID(storedSSID)) {
-    connectToWiFi();
-  } else {
-    Serial.println("No valid WiFi credentials, starting SmartConfig...");
-    storedSSID = "";
-    storedPassword = "";
-    startSmartConfig();
-  }
+
+  updateOLEDDisplay();
+
+  // Connect to fixed WiFi
+  connectToWiFi();
 
   startNetworkServices();
-  
+
   deviceStatus = "Ready - Waiting for connections";
   lastClientActivity = millis();
   Serial.println("Device initialization complete");
   Serial.println("RFID Reader Ready - Scan RFID Cards");
-}
-
-bool isValidSSID(String ssid) {
-  if (ssid.length() == 0 || ssid.length() > 32) return false;
-  for (int i = 0; i < ssid.length(); i++) {
-    if (ssid[i] < 32 || ssid[i] > 126) return false;
-  }
-  return true;
+  
+  updateOLEDDisplay();
 }
 
 void loop() {
   deviceUptime = millis();
-  
+
   handleRFIDReading();
   handleUDPDiscovery();
   handleTCPConnections();
   checkConnectionHealth();
-  
+
   if (millis() - lastStatusUpdate > STATUS_UPDATE_INTERVAL) {
     updateDeviceStatus();
     lastStatusUpdate = millis();
   }
-  
+
+  // Update OLED display more frequently for real-time status
+  static unsigned long lastOLEDUpdate = 0;
+  if (millis() - lastOLEDUpdate > 1000) {
+    updateOLEDDisplay();
+    lastOLEDUpdate = millis();
+  }
+
   delay(50);
+}
+
+void updateOLEDDisplay() {
+  display.clearDisplay();
+  display.setCursor(0,0);
+  
+  // Line 1: WiFi Status
+  display.setTextSize(1);
+  if (WiFi.status() == WL_CONNECTED) {
+    display.print("WiFi: ");
+    display.print(WiFi.SSID());
+  } else {
+    display.print("WiFi: Disconnected");
+  }
+  
+  // Line 2: IP Address or Connection Status
+  display.setCursor(0,10);
+  if (WiFi.status() == WL_CONNECTED) {
+    display.print("IP: ");
+    display.print(WiFi.localIP().toString());
+  } else {
+    display.print("Connecting...");
+  }
+  
+  // Line 3: TCP Connection Status
+  display.setCursor(0,20);
+  display.print("TCP: ");
+  if (tcpConnected) {
+    if (handshakeCompleted) {
+      display.print("Connected");
+    } else {
+      display.print("Wait Handshake");
+    }
+  } else {
+    display.print("Disconnected");
+  }
+  
+  // Line 4: RFID Status
+  display.setCursor(0,30);
+  display.print("RFID: ");
+  if (rfidPresent) {
+    display.print("Present");
+  } else {
+    display.print("No Card");
+  }
+  
+  // Line 5: Last RFID UID (truncated if too long)
+  display.setCursor(0,40);
+  display.print("UID: ");
+  if (lastRFIDUID.length() > 0) {
+    String shortUID = lastRFIDUID;
+    if (shortUID.length() > 10) {
+      shortUID = shortUID.substring(0, 10) + "...";
+    }
+    display.print(shortUID);
+  } else {
+    display.print("None");
+  }
+  
+  // Line 6: Device Uptime
+  display.setCursor(0,50);
+  display.print("Uptime: ");
+  display.print(deviceUptime / 1000);
+  display.print("s");
+  
+  display.display();
 }
 
 void handleRFIDReading() {
   if (millis() - lastRFIDRead < RFID_READ_INTERVAL) {
     return;
   }
-  
+
   if (!mfrc522.PICC_IsNewCardPresent()) {
     if (rfidPresent) {
       rfidPresent = false;
       sendRFIDRemoved();
+      updateOLEDDisplay(); // Update display when RFID is removed
     }
     return;
   }
@@ -121,10 +205,11 @@ void handleRFIDReading() {
   lastRFIDUID = uidString;
   rfidPresent = true;
   lastRFIDRead = millis();
-  
+
   Serial.println("RFID Detected: " + uidString);
   handleRFIDData(uidString);
-  
+  updateOLEDDisplay(); // Update display when new RFID is detected
+
   mfrc522.PICC_HaltA();
   mfrc522.PCD_StopCrypto1();
 }
@@ -135,7 +220,7 @@ void sendRFIDRemoved() {
   response += "\"status\":\"removed\",";
   response += "\"timestamp\":" + String(millis());
   response += "}";
-  
+
   if (tcpClient && tcpClient.connected()) {
     tcpClient.println(response);
     Serial.println("RFID card removed");
@@ -163,9 +248,9 @@ void handleUDPDiscovery() {
     if (len > 0) {
       packetBuffer[len] = '\0';
       String request = String(packetBuffer);
-      
+
       Serial.println("UDP Request from " + udp.remoteIP().toString() + ": " + request);
-      
+
       if (request == "FLUTTER_DISCOVERY_REQUEST" || request == "ESP32_DISCOVERY_REQUEST") {
         sendDiscoveryResponse(udp.remoteIP(), udp.remotePort());
       }
@@ -185,11 +270,11 @@ void sendDiscoveryResponse(IPAddress remoteIP, unsigned int remotePort) {
   response += "\"version\":\"2.0\",";
   response += "\"tcp_port\":" + String(TCP_PORT);
   response += "}";
-  
+
   udp.beginPacket(remoteIP, remotePort);
   udp.print(response);
   udp.endPacket();
-  
+
   Serial.println("Sent UDP response to " + remoteIP.toString());
 }
 
@@ -200,20 +285,22 @@ void handleTCPConnections() {
       if (tcpClient) {
         tcpClient.stop();
       }
-      
+
       tcpClient = newClient;
       tcpConnected = true;
+      handshakeCompleted = false; // Reset handshake status for new connection
       lastClientActivity = millis();
-      
+
       String clientIP = tcpClient.remoteIP().toString();
       Serial.println("New TCP client connected: " + clientIP);
-      
+
       tcpClient.setNoDelay(true);
       tcpClient.setTimeout(1000);
-      
+
       sendWelcomeMessage();
       deviceStatus = "Connected to " + clientIP;
       sendDeviceStatus();
+      updateOLEDDisplay(); // Update display when TCP connects
     }
   }
 
@@ -221,7 +308,7 @@ void handleTCPConnections() {
     while (tcpClient.available()) {
       String message = tcpClient.readStringUntil('\n');
       message.trim();
-      
+
       if (message.length() > 0) {
         Serial.println("TCP Received: " + message);
         lastClientActivity = millis();
@@ -239,7 +326,7 @@ void sendWelcomeMessage() {
     welcome += "\"status\":\"connected\",";
     welcome += "\"timestamp\":" + String(millis());
     welcome += "}";
-    
+
     tcpClient.println(welcome);
     Serial.println("Sent welcome message to client");
   }
@@ -248,20 +335,24 @@ void sendWelcomeMessage() {
 void checkConnectionHealth() {
   if (tcpConnected) {
     bool currentlyConnected = tcpClient.connected();
-    
+
     if (!currentlyConnected) {
       Serial.println("Client connection lost");
       tcpClient.stop();
       tcpConnected = false;
+      handshakeCompleted = false; // Reset handshake status
       deviceStatus = "Connection lost - Waiting for reconnect";
+      updateOLEDDisplay(); // Update display when TCP disconnects
       return;
     }
-    
+
     if (millis() - lastClientActivity > CLIENT_TIMEOUT) {
       Serial.println("Client timeout, disconnecting...");
       tcpClient.stop();
       tcpConnected = false;
+      handshakeCompleted = false; // Reset handshake status
       deviceStatus = "Client timeout - Waiting for connection";
+      updateOLEDDisplay(); // Update display when TCP times out
     }
   }
 }
@@ -269,21 +360,20 @@ void checkConnectionHealth() {
 void processTCPMessage(String message) {
   if (message == "HANDSHAKE") {
     sendHandshakeAck();
-  }
-  else if (message == "GET_STATUS") {
+    handshakeCompleted = true;
+    updateOLEDDisplay(); // Update display after handshake
+  } else if (message == "GET_STATUS") {
     sendDeviceStatus();
-  }
-  else if (message == "GET_WIFI_INFO") {
+  } else if (message == "GET_WIFI_INFO") {
     sendWiFiInfo();
-  }
-  else if (message.startsWith("PING:")) {
+  } else if (message.startsWith("PING:")) {
     String timestamp = message.substring(5);
     sendPong(timestamp);
-  }
-  else if (message == "\"type\":\"handshake\"") {
+  } else if (message == "\"type\":\"handshake\"") {
     sendHandshakeAck();
-  }
-  else {
+    handshakeCompleted = true;
+    updateOLEDDisplay(); // Update display after handshake
+  } else {
     if (message.startsWith("{")) {
       processJSONMessage(message);
     } else {
@@ -295,21 +385,19 @@ void processTCPMessage(String message) {
 void processJSONMessage(String jsonMessage) {
   if (jsonMessage.indexOf("\"type\":\"handshake\"") != -1) {
     sendHandshakeAck();
-  }
-  else if (jsonMessage.indexOf("\"type\":\"get_status\"") != -1) {
+    handshakeCompleted = true;
+    updateOLEDDisplay(); // Update display after handshake
+  } else if (jsonMessage.indexOf("\"type\":\"get_status\"") != -1) {
     sendDeviceStatus();
-  }
-  else if (jsonMessage.indexOf("\"type\":\"get_wifi_info\"") != -1) {
+  } else if (jsonMessage.indexOf("\"type\":\"get_wifi_info\"") != -1) {
     sendWiFiInfo();
-  }
-  else if (jsonMessage.indexOf("\"type\":\"ping\"") != -1) {
+  } else if (jsonMessage.indexOf("\"type\":\"ping\"") != -1) {
     int tsStart = jsonMessage.indexOf("\"timestamp\":") + 12;
     int tsEnd = jsonMessage.indexOf(",", tsStart);
     if (tsEnd == -1) tsEnd = jsonMessage.indexOf("}", tsStart);
     String timestamp = jsonMessage.substring(tsStart, tsEnd);
     sendPong(timestamp);
-  }
-  else {
+  } else {
     sendUnknownCommand();
   }
 }
@@ -321,7 +409,7 @@ void sendHandshakeAck() {
   ack += "\"status\":\"ready\",";
   ack += "\"timestamp\":" + String(millis());
   ack += "}";
-  
+
   if (tcpClient && tcpClient.connected()) {
     tcpClient.println(ack);
     Serial.println("Sent handshake ACK");
@@ -342,7 +430,7 @@ void sendDeviceStatus() {
   status += "\"rfid_present\":" + String(rfidPresent ? "true" : "false") + ",";
   status += "\"last_rfid\":\"" + lastRFIDUID + "\"";
   status += "}";
-  
+
   if (tcpClient && tcpClient.connected()) {
     tcpClient.println(status);
   }
@@ -356,9 +444,9 @@ void sendWiFiInfo() {
   wifiInfo += "\"gateway\":\"" + WiFi.gatewayIP().toString() + "\",";
   wifiInfo += "\"subnet\":\"" + WiFi.subnetMask().toString() + "\",";
   wifiInfo += "\"rssi\":" + String(WiFi.RSSI()) + ",";
-  wifiInfo += "\"stored_ssid\":\"" + storedSSID + "\"";
+  wifiInfo += "\"fixed_ssid\":\"Dorian\"";
   wifiInfo += "}";
-  
+
   if (tcpClient && tcpClient.connected()) {
     tcpClient.println(wifiInfo);
     Serial.println("Sent WiFi info");
@@ -371,7 +459,7 @@ void sendPong(String timestamp) {
   pong += "\"original_timestamp\":" + timestamp + ",";
   pong += "\"response_timestamp\":" + String(millis());
   pong += "}";
-  
+
   if (tcpClient && tcpClient.connected()) {
     tcpClient.println(pong);
     Serial.println("Sent pong response");
@@ -384,7 +472,7 @@ void sendUnknownCommand() {
   response += "\"message\":\"Unknown command\",";
   response += "\"timestamp\":" + String(millis());
   response += "}";
-  
+
   if (tcpClient && tcpClient.connected()) {
     tcpClient.println(response);
   }
@@ -392,13 +480,13 @@ void sendUnknownCommand() {
 
 void handleRFIDData(String rfidData) {
   Serial.println("Processing RFID: " + rfidData);
-  
+
   String response = "{";
   response += "\"type\":\"rfid_detected\",";
   response += "\"uid\":\"" + rfidData + "\",";
   response += "\"timestamp\":" + String(millis());
   response += "}";
-  
+
   if (tcpClient && tcpClient.connected()) {
     tcpClient.println(response);
   }
@@ -406,33 +494,12 @@ void handleRFIDData(String rfidData) {
   deviceStatus = "RFID: " + rfidData;
 }
 
-void scanWiFiNetworks() {
-  Serial.println("Scanning WiFi networks...");
-  int numNetworks = WiFi.scanNetworks();
-  
-  String networks = "{";
-  networks += "\"type\":\"networks\",";
-  networks += "\"networks\":[";
-  
-  for (int i = 0; i < numNetworks; i++) {
-    if (i > 0) networks += ",";
-    networks += "{";
-    networks += "\"ssid\":\"" + WiFi.SSID(i) + "\",";
-    networks += "\"rssi\":" + String(WiFi.RSSI(i)) + ",";
-    networks += "\"encryption\":" + String(WiFi.encryptionType(i));
-    networks += "}";
-  }
-  networks += "]}";
-  
-  tcpClient.println(networks);
-  WiFi.scanDelete();
-}
-
 void updateDeviceStatus() {
   if (WiFi.status() != WL_CONNECTED) {
     deviceStatus = "WiFi disconnected - Reconnecting";
     Serial.println("WiFi disconnected, attempting reconnect...");
     connectToWiFi();
+    updateOLEDDisplay(); // Update display when WiFi status changes
   }
 }
 
@@ -441,119 +508,34 @@ void connectToWiFi() {
     return;
   }
 
-  Serial.println("Connecting to WiFi: " + storedSSID);
+  Serial.println("Connecting to WiFi: " + String(FIXED_SSID));
   deviceStatus = "Connecting to WiFi...";
-  
+  updateOLEDDisplay();
+
   WiFi.disconnect(true);
   delay(2000);
-  
+
   WiFi.mode(WIFI_STA);
-  WiFi.begin(storedSSID.c_str(), storedPassword.c_str());
-  
+  WiFi.begin(FIXED_SSID, FIXED_PASSWORD);
+
   int attempts = 0;
   while (WiFi.status() != WL_CONNECTED && attempts < 20) {
     delay(1000);
     Serial.print(".");
     attempts++;
+    updateOLEDDisplay(); // Update display during connection attempt
   }
-  
+
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("WiFi Connected!");
     Serial.println("IP Address: " + WiFi.localIP().toString());
-    deviceStatus = "Connected to " + storedSSID;
+    deviceStatus = "Connected to " + String(FIXED_SSID);
     startNetworkServices();
+    updateOLEDDisplay(); // Update display when connected
   } else {
     Serial.println("WiFi connection failed");
     deviceStatus = "WiFi connection failed";
-    storedSSID = "";
-    storedPassword = "";
-    saveWiFiCredentials();
-    ESP.restart();
+    // Don't restart, just keep trying
+    updateOLEDDisplay();
   }
-}
-
-void startSmartConfig() {
-  Serial.println("Starting SmartConfig...");
-  deviceStatus = "SmartConfig Mode";
-  
-  WiFi.mode(WIFI_STA);
-  WiFi.beginSmartConfig();
-  
-  Serial.println("Waiting for SmartConfig...");
-  
-  int timeout = 0;
-  while (!WiFi.smartConfigDone() && timeout < 120) {
-    delay(500);
-    Serial.print(".");
-    timeout++;
-  }
-  
-  if (WiFi.smartConfigDone()) {
-    Serial.println("SmartConfig Received!");
-    
-    timeout = 0;
-    while (WiFi.status() != WL_CONNECTED && timeout < 30) {
-      delay(1000);
-      Serial.print(".");
-      timeout++;
-    }
-    
-    if (WiFi.status() == WL_CONNECTED) {
-      storedSSID = WiFi.SSID();
-      storedPassword = WiFi.psk();
-      if (isValidSSID(storedSSID)) {
-        saveWiFiCredentials();
-        Serial.println("WiFi connected and credentials saved!");
-        deviceStatus = "SmartConfig success - Connected";
-      } else {
-        Serial.println("Invalid SSID from SmartConfig");
-        storedSSID = "";
-        storedPassword = "";
-        deviceStatus = "SmartConfig failed - Invalid SSID";
-      }
-    }
-  } else {
-    Serial.println("SmartConfig timeout");
-    deviceStatus = "SmartConfig failed";
-    ESP.restart();
-  }
-}
-
-void readWiFiCredentials() {
-  storedSSID = readFromEEPROM(SSID_ADDR, 32);
-  storedPassword = readFromEEPROM(PASS_ADDR, 64);
-  Serial.println("Read from EEPROM - SSID: " + storedSSID);
-}
-
-void saveWiFiCredentials() {
-  writeToEEPROM(SSID_ADDR, storedSSID);
-  writeToEEPROM(PASS_ADDR, storedPassword);
-  EEPROM.commit();
-  Serial.println("Saved credentials to EEPROM");
-}
-
-void resetWiFiCredentials() {
-  storedSSID = "";
-  storedPassword = "";
-  writeToEEPROM(SSID_ADDR, "");
-  writeToEEPROM(PASS_ADDR, "");
-  EEPROM.commit();
-  Serial.println("WiFi credentials reset");
-}
-
-void writeToEEPROM(int address, String data) {
-  for (int i = 0; i < data.length(); i++) {
-    EEPROM.write(address + i, data[i]);
-  }
-  EEPROM.write(address + data.length(), '\0');
-}
-
-String readFromEEPROM(int address, int maxLength) {
-  String result = "";
-  for (int i = 0; i < maxLength; i++) {
-    char c = EEPROM.read(address + i);
-    if (c == 0) break;
-    result += c;
-  }
-  return result;
 }
